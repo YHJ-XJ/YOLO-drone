@@ -40,7 +40,7 @@ head:
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
   - [[-1, 4], 1, Concat, [1]] # cat backbone P3
   - [-1, 2, C3k2, [256, True]] # 16 (P3/8-small)
-
+#相比官方原版增加的P2部分
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
   - [[-1, 2], 1, Concat, [1]] # cat backbone P2
   - [-1, 2, C3k2, [128, True]] # 19 (P2/4-xsmall)

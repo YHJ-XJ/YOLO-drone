@@ -24,6 +24,7 @@ __all__ = (
     "LightConv",
     "RepConv",
     "SpatialAttention",
+    "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
 )
 
 
@@ -199,6 +200,26 @@ class DWConv(Conv):
         """
         super().__init__(c1, c2, k, s, g=math.gcd(c1, c2), d=d, act=act)
 
+class FGDDown(nn.Module):
+
+    def __init__(self, c1, c2):
+        super().__init__()
+        c_ = c2 // 2  # hidden channels
+        #第一条分支-保持空间信息量不损失
+        self.s2d = nn.PixelUnshuffle(2)  #下采样2倍
+        self.cv_spd=Conv(c1*4,c_,1,1)
+
+        #第二条分支-保留突出特征
+        self.pool = nn.MaxPool2d(2,2)
+        self.cv_pool=Conv(c1,c_,1,1)
+
+        #融合两个分支
+        self.fuse=Conv(c2,c2,3,1)
+
+    def forward(self, x):
+        x1=self.cv_spd(self.s2d(x))
+        x2=self.cv_pool(self.pool(x))
+        return self.fuse(torch.cat((x1,x2),1))
 
 class DWConvTranspose2d(nn.ConvTranspose2d):
     """Depth-wise transpose convolution module."""

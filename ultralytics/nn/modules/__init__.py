@@ -75,6 +75,7 @@ from .conv import (
     LightConv,
     RepConv,
     SpatialAttention,
+    FGDDown,  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
 )
 from .head import (
     OBB,
@@ -191,4 +192,5 @@ __all__ = (
     "YOLOESegment",
     "YOLOESegment26",
     "v10Detect",
+    "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
 )
