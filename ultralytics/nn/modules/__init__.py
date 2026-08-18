@@ -77,6 +77,7 @@ from .conv import (
     SpatialAttention,
     FGDDown,  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
     LFGDDown,  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
+    DCLDown,
 )
 from .head import (
     OBB,
@@ -195,4 +196,5 @@ __all__ = (
     "v10Detect",
     "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
     "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
+    "DCLDown",
 )

@@ -77,6 +77,7 @@ from ultralytics.nn.modules import (
     YOLOESegment26,
     v10Detect,
     FGDDown,
+    DCLDown,
 )
 from ultralytics.nn.modules.conv import LFGDDown
 from ultralytics.utils import (
@@ -2010,6 +2011,7 @@ def parse_model(d, ch, verbose=True):
             A2C2f,
             FGDDown,
             LFGDDown,
+            DCLDown,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments

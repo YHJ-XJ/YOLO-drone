@@ -26,6 +26,7 @@ __all__ = (
     "SpatialAttention",
     "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
     "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
+    "DCLDown",
 )
 
 
@@ -242,7 +243,36 @@ class LFGDDown(nn.Module):
         x1=self.cv_spd(self.s2d(x))
         x2=self.cv_dw(self.dw_down(x))
         return self.fuse_pw(self.fuse_dw(torch.cat((x1,x2),1)))
-        
+
+
+class DCLDown(nn.Module):
+    """Detail-Contrast Lightweight Downsampling for small object detection."""
+
+    def __init__(self, c1, c2):
+        super().__init__()
+        c_spd = c2 // 2
+        c_local = c2 // 4
+        c_contrast = c2 - c_spd - c_local
+
+        self.s2d = nn.PixelUnshuffle(2)
+        self.cv_spd = Conv(c1 * 4, c_spd, 1, 1)
+
+        self.dw_down = DWConv(c1, c1, 3, 2)
+        self.cv_local = Conv(c1, c_local, 1, 1)
+
+        self.maxpool = nn.MaxPool2d(2, 2)
+        self.avgpool = nn.AvgPool2d(2, 2)
+        self.cv_contrast = Conv(c1, c_contrast, 1, 1)
+
+        self.fuse_dw = DWConv(c2, c2, 3, 1)
+        self.fuse_pw = Conv(c2, c2, 1, 1)
+
+    def forward(self, x):
+        x_spd = self.cv_spd(self.s2d(x))
+        x_local = self.cv_local(self.dw_down(x))
+        x_contrast = self.cv_contrast(self.maxpool(x) - self.avgpool(x))
+        return self.fuse_pw(self.fuse_dw(torch.cat((x_spd, x_local, x_contrast), 1)))
+
 
 class DWConvTranspose2d(nn.ConvTranspose2d):
     """Depth-wise transpose convolution module."""
