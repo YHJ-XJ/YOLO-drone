@@ -78,6 +78,7 @@ from ultralytics.nn.modules import (
     v10Detect,
     FGDDown,
 )
+from ultralytics.nn.modules.conv import LFGDDown
 from ultralytics.utils import (
     DEFAULT_CFG_DICT,
     LOGGER,
@@ -2008,6 +2009,7 @@ def parse_model(d, ch, verbose=True):
             C2fCIB,
             A2C2f,
             FGDDown,
+            LFGDDown,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments

@@ -25,6 +25,7 @@ __all__ = (
     "RepConv",
     "SpatialAttention",
     "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
+    "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
 )
 
 
@@ -220,6 +221,28 @@ class FGDDown(nn.Module):
         x1=self.cv_spd(self.s2d(x))
         x2=self.cv_pool(self.pool(x))
         return self.fuse(torch.cat((x1,x2),1))
+
+#相比于上述的模块，该模块为适合轻量化的目标检测网络，减少参数量和计算量
+class LFGDDown(nn.Module):
+    def __init__(self, c1, c2):
+        super().__init__()
+        c_=c2//2
+
+        self.s2d=nn.PixelUnshuffle(2)
+        self.cv_spd=Conv(c1*4,c_,1,1)
+
+#与上述的最大池化不同的是这个模块有可学习参数，能学习边缘、纹理、局部结构，较灵活
+        self.dw_down=DWConv(c1,c1,3,2)
+        self.cv_dw=Conv(c1,c2-c_,1,1)
+
+        self.fuse_dw=DWConv(c2,c2,3,1)
+        self.fuse_pw=Conv(c2,c2,1,1)
+
+    def forward(self, x):
+        x1=self.cv_spd(self.s2d(x))
+        x2=self.cv_dw(self.dw_down(x))
+        return self.fuse_pw(self.fuse_dw(torch.cat((x1,x2),1)))
+        
 
 class DWConvTranspose2d(nn.ConvTranspose2d):
     """Depth-wise transpose convolution module."""
