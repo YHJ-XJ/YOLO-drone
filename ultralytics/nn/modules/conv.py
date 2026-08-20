@@ -7,6 +7,7 @@ import math
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 __all__ = (
@@ -27,6 +28,9 @@ __all__ = (
     "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
     "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
     "DCLDown",
+    "WDCLDown",
+    "DySample",
+    "DAFuseST",
 )
 
 
@@ -272,6 +276,164 @@ class DCLDown(nn.Module):
         x_local = self.cv_local(self.dw_down(x))
         x_contrast = self.cv_contrast(self.maxpool(x) - self.avgpool(x))
         return self.fuse_pw(self.fuse_dw(torch.cat((x_spd, x_local, x_contrast), 1)))
+
+
+class WDCLDown(nn.Module):
+    """Wavelet Detail-Contrast Lightweight Downsampling（小波细节对比轻量下采样）。
+
+    三条并行分支在把分辨率减半的同时保留小目标细节：
+      1. PixelUnshuffle(2) -> 1x1 Conv   空间-通道重排，借鉴 SPDConv / reorg_layer
+      2. DWConv(3, s=2)      -> 1x1 Conv   可学习局部结构下采样
+      3. Haar 高频(LH/HL/HH) -> 1x1 Conv   方向性边缘/纹理，借鉴小波池化思想
+    其中第 3 条分支是固定的加减法，几乎没有可学习参数，却能把小目标最依赖的边缘与
+    局部突变信息保留下来。相比 DCLDown 的 MaxPool-AvgPool 对比分支，Haar 高频能同时
+    保留水平/垂直/对角三个方向的细节，信号更强。
+    """
+
+    def __init__(self, c1, c2):
+        super().__init__()
+        c_spd = c2 // 2
+        c_local = c2 // 4
+        c_hf = c2 - c_spd - c_local  # = c2 // 4
+
+        # 分支1：空间重排保留细节
+        self.s2d = nn.PixelUnshuffle(2)
+        self.cv_spd = Conv(c1 * 4, c_spd, 1, 1)
+
+        # 分支2：可学习局部下采样
+        self.dw_down = DWConv(c1, c1, 3, 2)
+        self.cv_local = Conv(c1, c_local, 1, 1)
+
+        # 分支3：Haar 高频边缘/纹理
+        self.cv_hf = Conv(c1 * 3, c_hf, 1, 1)
+
+        self.fuse_dw = DWConv(c2, c2, 3, 1)
+        self.fuse_pw = Conv(c2, c2, 1, 1)
+
+    @staticmethod
+    def _haar_hf(x):
+        """返回 2x2 Haar 变换的高频子带 LH/HL/HH（无学习参数）。"""
+        b, c, h, w = x.shape
+        x = F.pixel_unshuffle(x, 2)  # [B, 4C, H/2, W/2]，每个 2x2 块拆成 a,b,c,d
+        x = x.view(b, c, 4, h // 2, w // 2)
+        a, b_, c_, d = x[:, :, 0], x[:, :, 1], x[:, :, 2], x[:, :, 3]
+        lh = (a - b_ + c_ - d) * 0.5  # 水平边缘
+        hl = (a + b_ - c_ - d) * 0.5  # 垂直边缘
+        hh = (a - b_ - c_ + d) * 0.5  # 对角边缘
+        return torch.cat([lh, hl, hh], dim=1)
+
+    def forward(self, x):
+        x_spd = self.cv_spd(self.s2d(x))
+        x_local = self.cv_local(self.dw_down(x))
+        x_hf = self.cv_hf(self._haar_hf(x))
+        return self.fuse_pw(self.fuse_dw(torch.cat((x_spd, x_local, x_hf), 1)))
+
+
+class DySample(nn.Module):
+    """动态采样上采样模块：用可学习偏移替代固定 nearest 上采样。"""
+
+    def __init__(self, c1, scale=2, groups=4, dyscope=False):
+        super().__init__()
+        # c1 是输入通道数，由 tasks.py 根据上一层自动补进来；YAML 里不用手写 c1。
+        # scale=2 表示特征图高宽各放大 2 倍，正好对应 YOLO 颈部 P5->P4、P4->P3 的上采样。
+        # groups=4 表示分组采样，能减少偏移学习的开销；c1 必须能被 groups 整除。
+        assert c1 % groups == 0, f"DySample: input channels c1={c1} must be divisible by groups={groups}"
+        self.scale = scale
+        self.groups = groups
+        self.dyscope = dyscope
+
+        # 每个采样点需要 x/y 两个方向的偏移；pixel_shuffle 后得到更密的上采样网格。
+        offset_channels = 2 * groups * scale * scale
+        self.offset = nn.Conv2d(c1, offset_channels, 1)
+        nn.init.normal_(self.offset.weight, std=0.001)
+        nn.init.constant_(self.offset.bias, 0)
+
+        # dyscope=True 时额外学习一个偏移幅度门控；第一次实验先设 False，变量更干净。
+        if self.dyscope:
+            self.scope = nn.Conv2d(c1, offset_channels, 1, bias=False)
+            nn.init.constant_(self.scope.weight, 0)
+
+        # init_pos 是初始规则采样位置，让模块一开始接近普通双线性/规则上采样，训练更稳。
+        self.register_buffer("init_pos", self._init_pos())
+
+    def _init_pos(self):
+        """生成 scale x scale 子像素网格的初始偏移。"""
+        h = torch.arange((-self.scale + 1) / 2, (self.scale - 1) / 2 + 1) / self.scale
+        pos = torch.stack(torch.meshgrid(h, h, indexing="ij")).transpose(1, 2)
+        return pos.repeat(1, self.groups, 1).reshape(1, -1, 1, 1)
+
+    def sample(self, x, offset):
+        """根据学习到的 offset 对原特征图做 grid_sample，得到动态上采样特征。"""
+        b, _, h, w = offset.shape
+        offset = offset.view(b, 2, -1, h, w)
+
+        # 构造原始网格中心点坐标，0.5 表示像素中心。
+        coords_h = torch.arange(h, dtype=x.dtype, device=x.device) + 0.5
+        coords_w = torch.arange(w, dtype=x.dtype, device=x.device) + 0.5
+        coords = torch.stack(torch.meshgrid(coords_w, coords_h, indexing="xy")).unsqueeze(0).unsqueeze(2)
+
+        # grid_sample 要求坐标范围归一化到 [-1, 1]。
+        normalizer = torch.tensor([w, h], dtype=x.dtype, device=x.device).view(1, 2, 1, 1, 1)
+        coords = 2 * (coords + offset) / normalizer - 1
+
+        # pixel_shuffle 把低分辨率偏移重排成高分辨率采样网格。
+        coords = F.pixel_shuffle(coords.reshape(b, -1, h, w), self.scale)
+        coords = coords.reshape(b, 2, -1, self.scale * h, self.scale * w)
+        coords = coords.permute(0, 2, 3, 4, 1).contiguous().flatten(0, 1)
+
+        # 分组采样：每组通道共享一套采样偏移，兼顾精度和轻量化。
+        x = x.reshape(b * self.groups, -1, h, w)
+        out = F.grid_sample(x, coords, mode="bilinear", align_corners=False, padding_mode="border")
+        return out.reshape(b, -1, self.scale * h, self.scale * w)
+
+    def forward(self, x):
+        # 0.25/0.5 是偏移幅度限制，避免一开始采样点乱跑导致训练不稳定。
+        if self.dyscope:
+            offset = self.offset(x) * self.scope(x).sigmoid() * 0.5 + self.init_pos
+        else:
+            offset = self.offset(x) * 0.25 + self.init_pos
+        return self.sample(x, offset)
+
+
+class DAFuseST(nn.Module):
+    """细节感知尺度自适应融合模块（v2）：用 softmax 分支权重替换普通 Concat。
+
+    相比 v1 的两点修正：
+    1. 去掉 gamma=0 / tanh(0)=0 的门控，避免空间门控卷积在训练初期梯度为零、长期不激活。
+    2. 不再用逐分支标量 branch_scale（它和下游 C3k2 的 1x1 卷积作用重复），改为
+       GAP+GMP -> 微型 MLP -> softmax 得到"分支权重"，机制更明确且无梯度消失。
+    """
+
+    def __init__(self, channels, dimension=1):
+        super().__init__()
+        # channels 是待融合各路特征的通道数列表，由 tasks.py 根据 from 索引自动传入。
+        # dimension=1 表示沿通道维拼接，和 YOLO 原始 Concat 的行为保持一致。
+        self.channels = channels
+        self.d = dimension
+        self.n = len(channels)
+        total = sum(channels)
+
+        # 每个分支先做全局平均池化和全局最大池化，得到 2*channels 的统计描述子。
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.gmp = nn.AdaptiveMaxPool2d(1)
+
+        # 微型 MLP 把 2*total 的统计描述子压成 n 个分支 logits，再 softmax 得到分支权重。
+        # 不用 tanh/零初始化，因此从第一步起就有梯度，不会出现 v1 的空间门控"冻住"问题。
+        hidden = max(4, self.n * 4)
+        self.attn = nn.Sequential(
+            nn.Conv2d(2 * total, hidden, 1, bias=False),
+            nn.SiLU(),
+            nn.Conv2d(hidden, self.n, 1),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, xs):
+        # xs 是 YAML 中 [[-1, 6], ...] 这类 from 列表对应的多路特征。
+        # 输出仍沿通道维拼接，通道数 = sum(channels)，与普通 Concat 完全一致，
+        # 因此后续 C3k2 的输入通道数不变。
+        z = torch.cat([torch.cat([self.gap(x), self.gmp(x)], dim=1) for x in xs], dim=1)
+        w = self.attn(z)  # [B, n, 1, 1]，n 个分支权重之和为 1
+        return torch.cat([w[:, i : i + 1] * x for i, x in enumerate(xs)], dim=self.d)
 
 
 class DWConvTranspose2d(nn.ConvTranspose2d):

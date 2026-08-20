@@ -1,0 +1,56 @@
+# Ultralytics YOLO26 + DySample + DAFuseST object detection model.
+# 本配置是当前主线候选：保留已验证有效的 DySample，再加入轻量动态融合 DAFuseST。
+# 目标：不增加 P2 检测头，在低计算量下提升无人机小目标的跨尺度融合质量。
+
+nc: 10  # VisDrone 转 YOLO 后的 10 个有效类别
+scale: n  # 使用 YOLO26n 规模，和 yolo26n.pt 预训练权重对应
+end2end: True  # 保持 YOLO26 官方端到端检测设置
+reg_max: 1  # 保持官方 YOLO26 配置，保证和 baseline 公平对比
+
+scales:
+  # [depth, width, max_channels]
+  n: [0.50, 0.25, 1024]
+  s: [0.50, 0.50, 1024]
+  m: [0.50, 1.00, 512]
+  l: [1.00, 1.00, 512]
+  x: [1.00, 1.50, 512]
+
+backbone:
+  # [from, repeats, module, args]
+  # backbone 保持官方 YOLO26 baseline，不加入 DCLDown，避免与 DySample 产生空间采样冲突。
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, False, 0.25]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, False, 0.25]]
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, True]]
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 2, C3k2, [1024, True]]
+  - [-1, 1, SPPF, [1024, 5, 3, True]] # 9
+  - [-1, 2, C2PSA, [1024]] # 10
+
+head:
+  # P5/32 -> P4/16：用 DySample 替换固定 nearest 上采样。
+  - [-1, 1, DySample, [2, 4, False]]
+  # 原官方：Concat [1]
+  # 改进：DAFuseST [1]，输出仍为通道拼接，但融合前用 GAP+GMP->MLP->softmax 学习分支权重。
+  - [[-1, 6], 1, DAFuseST, [1]] # 动态融合 backbone P4
+  - [-1, 2, C3k2, [512, True]] # 13
+
+  # P4/16 -> P3/8：这是对小目标最关键的一次上采样融合。
+  - [-1, 1, DySample, [2, 4, False]]
+  - [[-1, 4], 1, DAFuseST, [1]] # 动态融合 backbone P3
+  - [-1, 2, C3k2, [256, True]] # 16 (P3/8-small)
+
+  # 自底向上的 PAN 路径先保持官方 Concat，不一次性改太多，便于判断 DAFuseST 的作用位置。
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 13], 1, Concat, [1]] # cat head P4
+  - [-1, 2, C3k2, [512, True]] # 19 (P4/16-medium)
+
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 10], 1, Concat, [1]] # cat head P5
+  - [-1, 1, C3k2, [1024, True, 0.5, True]] # 22 (P5/32-large)
+
+  # 不加 P2 检测头，保持 Detect(P3, P4, P5)，符合边缘轻量化部署目标。
+  - [[16, 19, 22], 1, Detect, [nc]] # Detect(P3, P4, P5)

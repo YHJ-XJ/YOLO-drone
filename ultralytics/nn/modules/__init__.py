@@ -78,6 +78,9 @@ from .conv import (
     FGDDown,  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
     LFGDDown,  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
     DCLDown,
+    WDCLDown,  #自编模块-小波细节对比轻量下采样，用于替换P2->P3下采样Conv
+    DySample,  #自编模块4-动态采样上采样，用于替换YOLO颈部nearest上采样
+    DAFuseST,  #自编模块5-小目标动态自适应融合，用于替换部分Concat
 )
 from .head import (
     OBB,
@@ -197,4 +200,7 @@ __all__ = (
     "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
     "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
     "DCLDown",
+    "WDCLDown",
+    "DySample",
+    "DAFuseST",
 )

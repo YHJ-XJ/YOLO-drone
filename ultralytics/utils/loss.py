@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 from __future__ import annotations
 
@@ -108,6 +108,53 @@ class DFLoss(nn.Module):
         ).mean(-1, keepdim=True)
 
 
+# ===================== NWD (Normalized Wasserstein Distance) =====================
+# 小目标定位损失：把框建模成 2D 高斯分布，用二阶 Wasserstein 距离度量两个框的相似度。
+# tiny box 的 IoU 对几个像素的偏移极其敏感（甚至没有交并比），NWD 用高斯距离更平滑地
+# 度量定位误差，专门用于航拍 / 无人机 tiny object。这是"损失级"改进，只影响训练，
+# 推理阶段零额外计算，与轻量边缘部署路线完全兼容。
+NWD_ENABLED = False     # 总开关：结构实验默认关闭 NWD，避免 loss 改动污染模型结构对照
+NWD_ALPHA = 0.5         # NWD 在 box loss 中的占比，0.5 表示 CIoU 和 NWD 各占一半
+NWD_CONSTANT = 16.0     # 像素单位下的归一化常数；越小对 tiny box 越敏感（NWD 论文 AI-TOD 用 12.8）
+
+
+def wasserstein_loss(pred_boxes, target_boxes, eps=1e-7, constant=NWD_CONSTANT):
+    """计算预测框与目标框之间的归一化 Wasserstein 距离相似度 (NWD)。
+
+    Args:
+        pred_boxes (Tensor): (N, 4) 预测框，xyxy 格式，像素单位。
+        target_boxes (Tensor): (N, 4) 目标框，xyxy 格式，像素单位。
+        eps (float): 防止 sqrt 数值不稳定。
+        constant (float): 归一化常数，与目标尺度有关。
+
+    Returns:
+        (Tensor): (N,) 每个框的 NWD 相似度，范围 (0, 1]，越大表示定位越准。
+    """
+    pred_boxes = pred_boxes.float()
+    target_boxes = target_boxes.float()
+
+    # 中心点
+    cx1 = (pred_boxes[..., 0] + pred_boxes[..., 2]) / 2
+    cy1 = (pred_boxes[..., 1] + pred_boxes[..., 3]) / 2
+    cx2 = (target_boxes[..., 0] + target_boxes[..., 2]) / 2
+    cy2 = (target_boxes[..., 1] + target_boxes[..., 3]) / 2
+    # 宽高（clamp 防止退化框产生负值）
+    w1 = (pred_boxes[..., 2] - pred_boxes[..., 0]).clamp_min(0.0)
+    h1 = (pred_boxes[..., 3] - pred_boxes[..., 1]).clamp_min(0.0)
+    w2 = (target_boxes[..., 2] - target_boxes[..., 0]).clamp_min(0.0)
+    h2 = (target_boxes[..., 3] - target_boxes[..., 1]).clamp_min(0.0)
+
+    # 二阶 Wasserstein 距离：W2^2 = ||mu1-mu2||^2 + ||sqrt(Sigma1)-sqrt(Sigma2)||_F^2
+    # 对角协方差 Sigma = diag(w^2/4, h^2/4)，故 sqrt(Sigma) = diag(w/2, h/2)
+    center_dist = (cx1 - cx2) ** 2 + (cy1 - cy2) ** 2
+    wh_dist = (w1 - w2) ** 2 + (h1 - h2) ** 2
+    w2_dist = center_dist + wh_dist / 4
+    wasserstein = torch.sqrt(w2_dist + eps)
+
+    # 归一化到 (0, 1]：指数衰减，距离越大相似度越低
+    return torch.exp(-wasserstein / constant)
+
+
 class BboxLoss(nn.Module):
     """Criterion class for computing training losses for bounding boxes."""
 
@@ -132,6 +179,15 @@ class BboxLoss(nn.Module):
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
+
+        # NWD 小目标定位损失：把框还原到像素单位后计算高斯 Wasserstein 距离，
+        # 与 CIoU 加权融合，缓解 tiny box 对位置偏移过度敏感的问题。
+        if NWD_ENABLED:
+            pred_px = (pred_bboxes * stride)[fg_mask]
+            target_px = (target_bboxes * stride)[fg_mask]
+            nwd = wasserstein_loss(pred_px, target_px, constant=NWD_CONSTANT).unsqueeze(-1)
+            loss_nwd = ((1.0 - nwd) * weight).sum() / target_scores_sum
+            loss_iou = (1.0 - NWD_ALPHA) * loss_iou + NWD_ALPHA * loss_nwd
 
         # DFL loss
         if self.dfl_loss:
@@ -1513,3 +1569,4 @@ class SemanticSegmentationLoss(nn.Module):
 
         loss_items = {"ce_loss": ce_loss.detach(), "dice_loss": dice_loss.detach(), "aux_loss": aux_loss.detach()}
         return total * preds.shape[0], loss_items
+

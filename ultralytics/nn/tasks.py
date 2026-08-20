@@ -78,6 +78,9 @@ from ultralytics.nn.modules import (
     v10Detect,
     FGDDown,
     DCLDown,
+    WDCLDown,
+    DySample,
+    DAFuseST,
 )
 from ultralytics.nn.modules.conv import LFGDDown
 from ultralytics.utils import (
@@ -2012,6 +2015,7 @@ def parse_model(d, ch, verbose=True):
             FGDDown,
             LFGDDown,
             DCLDown,
+            WDCLDown,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -2071,6 +2075,11 @@ def parse_model(d, ch, verbose=True):
                     args.extend((True, 1.2))
             if m is C2fCIB:
                 legacy = False
+        elif m is DySample:
+            # DySample 是上采样模块：只把特征图尺寸放大，不改变通道数。
+            # 因此不能放进 base_modules，否则 YAML 中的 scale=2 会被误当成输出通道 c2。
+            c2 = ch[f]
+            args = [ch[f], *args]
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in frozenset({HGStem, HGBlock}):
@@ -2085,6 +2094,11 @@ def parse_model(d, ch, verbose=True):
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif m is DAFuseST:
+            # DAFuseST 和 Concat 一样输出通道拼接结果，因此 c2 等于各输入通道之和。
+            # 但它内部需要知道每一路输入通道数，用来对每一路做 GAP+GMP->MLP->softmax 分支加权。
+            c2 = sum(ch[x] for x in f)
+            args = [[ch[x] for x in f], *args]
         elif m in frozenset(
             {
                 Detect,

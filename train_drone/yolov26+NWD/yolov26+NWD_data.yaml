@@ -1,0 +1,19 @@
+path: /root/autodl-tmp/yolo26_drone_package/datasets/VisDrone-YOLO
+train: images/train
+val: images/val
+test: images/test
+
+# VisDrone-DET 转换后的 10 个有效检测类别。
+# 保持和 baseline、DySample 等前面实验一致，确保消融公平。
+nc: 10
+names:
+  0: pedestrian
+  1: people
+  2: bicycle
+  3: car
+  4: van
+  5: truck
+  6: tricycle
+  7: awning-tricycle
+  8: bus
+  9: motor
