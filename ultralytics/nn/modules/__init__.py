@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """
 Ultralytics neural network modules.
 
@@ -76,10 +76,14 @@ from .conv import (
     RepConv,
     SpatialAttention,
     FGDDown,  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
+    GFGDDown,  # 门控细粒度双路径下采样，用于替换 P2->P3 的 FGDDown
     LFGDDown,  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
     DCLDown,
     WDCLDown,  #自编模块-小波细节对比轻量下采样，用于替换P2->P3下采样Conv
     DySample,  #自编模块4-动态采样上采样，用于替换YOLO颈部nearest上采样
+    TGPFuse,  # 小目标先验引导融合，用于替换 Neck 中关键 Concat
+    TGPFuseSDFM,  # PSFusion-SDFM启发的小目标浅层细节融合
+    TPCCSIM,  # Detect前的小目标先验一致性校准
     DAFuseST,  #自编模块5-小目标动态自适应融合，用于替换部分Concat
 )
 from .head import (
@@ -198,9 +202,16 @@ __all__ = (
     "YOLOESegment26",
     "v10Detect",
     "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
+    "GFGDDown",
     "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
     "DCLDown",
     "WDCLDown",
     "DySample",
+    "TGPFuse",
+    "TGPFuseSDFM",
+    "TPCCSIM",
     "DAFuseST",
 )
+
+
+

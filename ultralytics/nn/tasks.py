@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 from __future__ import annotations
 
@@ -77,9 +77,13 @@ from ultralytics.nn.modules import (
     YOLOESegment26,
     v10Detect,
     FGDDown,
+    GFGDDown,
     DCLDown,
     WDCLDown,
     DySample,
+    TGPFuse,
+    TGPFuseSDFM,
+    TPCCSIM,
     DAFuseST,
 )
 from ultralytics.nn.modules.conv import LFGDDown
@@ -2013,9 +2017,11 @@ def parse_model(d, ch, verbose=True):
             C2fCIB,
             A2C2f,
             FGDDown,
+            GFGDDown,
             LFGDDown,
             DCLDown,
             WDCLDown,
+            TPCCSIM,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -2094,6 +2100,14 @@ def parse_model(d, ch, verbose=True):
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif m is TGPFuse:
+            # TGPFuse 与 Concat 一样沿通道拼接输出，但内部会根据 tiny prior 做残差门控。
+            c2 = sum(ch[x] for x in f)
+            args = [[ch[x] for x in f], *args]
+        elif m is TGPFuseSDFM:
+            # TGPFuseSDFM 与 Concat 一样输出通道拼接结果，但内部加入 SDFM 风格的浅层细节融合。
+            c2 = sum(ch[x] for x in f)
+            args = [[ch[x] for x in f], *args]
         elif m is DAFuseST:
             # DAFuseST 和 Concat 一样输出通道拼接结果，因此 c2 等于各输入通道之和。
             # 但它内部需要知道每一路输入通道数，用来对每一路做 GAP+GMP->MLP->softmax 分支加权。
@@ -2274,3 +2288,5 @@ def guess_model_task(model):
         "Explicitly define task for your model, i.e. 'task=detect', 'segment', 'classify', 'pose', 'obb' or 'semantic'."
     )
     return "detect"  # assume detect
+
+

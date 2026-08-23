@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """Convolution modules."""
 
 from __future__ import annotations
@@ -30,6 +30,9 @@ __all__ = (
     "DCLDown",
     "WDCLDown",
     "DySample",
+    "TGPFuse",
+    "TGPFuseSDFM",
+    "TPCCSIM",
     "DAFuseST",
 )
 
@@ -249,6 +252,44 @@ class LFGDDown(nn.Module):
         return self.fuse_pw(self.fuse_dw(torch.cat((x1,x2),1)))
 
 
+
+class GFGDDown(nn.Module):
+    """Gated Fine-Grained Dual-path Downsampling（门控细粒度双路径下采样）。
+
+    PixelUnshuffle 分支保留小目标细粒度空间信息，Pool 分支保留显著响应。
+    门控分支根据输入特征自适应分配两条路径的权重，用于替代固定拼接。
+    """
+
+    def __init__(self, c1, c2):
+        super().__init__()
+        c_ = c2 // 2
+
+        # 细节分支：空间到通道重排，尽量减少 P2->P3 下采样时的小目标信息损失。
+        self.s2d = nn.PixelUnshuffle(2)
+        self.cv_spd = Conv(c1 * 4, c_, 1, 1)
+
+        # 显著分支：池化保留强响应区域，作为目标主体和边缘显著性的补偿。
+        self.pool = nn.MaxPool2d(2, 2)
+        self.cv_pool = Conv(c1, c2 - c_, 1, 1)
+
+        # 轻量门控：只学习两条分支的权重，额外参数很少。
+        hidden = max(c1 // 4, 8)
+        self.gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c1, hidden, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(hidden, 2, 1, bias=True),
+            nn.Softmax(dim=1),
+        )
+
+        # 与 FGDDown 保持相同融合方式，便于单变量消融比较。
+        self.fuse = Conv(c2, c2, 3, 1)
+
+    def forward(self, x):
+        w = self.gate(x)
+        x1 = self.cv_spd(self.s2d(x)) * w[:, 0:1]
+        x2 = self.cv_pool(self.pool(x)) * w[:, 1:2]
+        return self.fuse(torch.cat((x1, x2), 1))
 class DCLDown(nn.Module):
     """Detail-Contrast Lightweight Downsampling for small object detection."""
 
@@ -395,6 +436,139 @@ class DySample(nn.Module):
         return self.sample(x, offset)
 
 
+
+class TGPFuse(nn.Module):
+    """Tiny-object Prior Guided Fusion（小目标先验引导融合）。
+
+    该模块用于替换 Neck 中关键 Concat：
+    1. 保留原 Concat 的通道拼接主路径，保证预训练结构尽量稳定；
+    2. 从浅层/细节分支生成 tiny-object prior map；
+    3. 用 prior map 对各分支做轻量残差增强，提升小目标相关融合响应。
+    """
+
+    def __init__(self, channels, dimension=1, prior_index=-1, reduction=4, gamma_init=0.1):
+        super().__init__()
+        self.channels = channels
+        self.d = dimension
+        self.n = len(channels)
+        self.prior_index = prior_index if prior_index >= 0 else self.n + prior_index
+        total = sum(channels)
+        prior_c = channels[self.prior_index]
+        hidden = max(prior_c // reduction, 8)
+
+        # 小目标先验分支：默认从更浅层/细节分支生成空间先验图。
+        self.prior = nn.Sequential(
+            Conv(prior_c, hidden, 1, 1),
+            nn.Conv2d(hidden, 1, 1, bias=True),
+            nn.Sigmoid(),
+        )
+
+        # 分支残差权重：对每一路融合输入生成轻量空间权重。
+        self.branch_gate = nn.Conv2d(total, self.n, 1, bias=True)
+        nn.init.constant_(self.branch_gate.weight, 0)
+        nn.init.constant_(self.branch_gate.bias, 0)
+
+        # 残差强度系数，较小初始化避免训练初期破坏原 Concat 路径。
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init)))
+
+    def forward(self, xs):
+        if not isinstance(xs, (list, tuple)):
+            xs = [xs]
+        prior = self.prior(xs[self.prior_index])
+        cat = torch.cat(xs, self.d)
+        weights = self.branch_gate(cat).softmax(1)
+        outs = [x * (1.0 + self.gamma * prior * weights[:, i : i + 1]) for i, x in enumerate(xs)]
+        return torch.cat(outs, self.d)
+
+
+class TGPFuseSDFM(nn.Module):
+    """Tiny-object Guided Superficial Detail Fusion Module（小目标先验浅层细节融合）。
+
+    设计动机来自 PSFusion 的 SDFM，但这里不是做红外/可见光融合，而是用于 YOLO Neck 中
+    相同尺度特征的融合。它保留 Concat 的输出形式，同时增加局部细节和全局通道两类轻量门控。
+    """
+
+    def __init__(self, channels, dimension=1, prior_index=-1, reduction=4, gamma_init=0.1):
+        super().__init__()
+        self.channels = channels
+        self.d = dimension
+        self.n = len(channels)
+        self.prior_index = prior_index if prior_index >= 0 else self.n + prior_index
+        total = sum(channels)
+        prior_c = channels[self.prior_index]
+        hidden = max(prior_c // reduction, 8)
+
+        # 空间细节先验：从浅层/细节分支提取 1 通道小目标响应图，强调边缘、纹理和密集小目标区域。
+        self.spatial_prior = nn.Sequential(
+            Conv(prior_c, hidden, 1, 1),
+            nn.Conv2d(hidden, hidden, 3, padding=1, groups=hidden, bias=False),
+            nn.BatchNorm2d(hidden),
+            nn.SiLU(),
+            nn.Conv2d(hidden, 1, 1, bias=True),
+            nn.Sigmoid(),
+        )
+
+        # 全局分支权重：用平均池化+最大池化估计每一路特征的重要性，避免普通 Concat 粗暴拼接。
+        branch_hidden = max(total // reduction, 8)
+        self.global_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            Conv(total, branch_hidden, 1, 1),
+            nn.Conv2d(branch_hidden, self.n, 1, bias=True),
+        )
+        self.max_gate = nn.Sequential(
+            nn.AdaptiveMaxPool2d(1),
+            Conv(total, branch_hidden, 1, 1),
+            nn.Conv2d(branch_hidden, self.n, 1, bias=True),
+        )
+
+        # 小初始化：训练初期近似普通 Concat，减少破坏预训练权重带来的震荡。
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init)))
+
+    def forward(self, xs):
+        if not isinstance(xs, (list, tuple)):
+            xs = [xs]
+        prior = self.spatial_prior(xs[self.prior_index])
+        cat = torch.cat(xs, self.d)
+        weights = (self.global_gate(cat) + self.max_gate(cat)).softmax(1)
+        outs = [x * (1.0 + self.gamma * prior * weights[:, i : i + 1]) for i, x in enumerate(xs)]
+        return torch.cat(outs, self.d)
+
+
+class TPCCSIM(nn.Module):
+    """Tiny-Prior Consistency Calibration with SIM-style modulation.
+
+    用在 Detect 前的单个尺度特征上，做轻量的 gamma/beta 调制。它不改变特征尺寸和通道数，
+    因此适合快速插入 P2/P3/P4/P5 检测层前做消融。
+    """
+
+    def __init__(self, c1, c2=None, reduction=8, gamma_init=0.1):
+        super().__init__()
+        c2 = c1 if c2 is None else c2
+        hidden = max(c1 // reduction, 8)
+        self.proj = Conv(c1, c2, 1, 1) if c1 != c2 else nn.Identity()
+
+        # tiny prior：局部深度卷积提取小目标/边缘响应。
+        self.prior = nn.Sequential(
+            nn.Conv2d(c2, c2, 3, padding=1, groups=c2, bias=False),
+            nn.BatchNorm2d(c2),
+            nn.SiLU(),
+            nn.Conv2d(c2, 1, 1, bias=True),
+            nn.Sigmoid(),
+        )
+
+        # SIM 风格调制：由全局上下文生成通道级 gamma/beta，再被 tiny prior 控制空间位置。
+        self.context = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            Conv(c2, hidden, 1, 1),
+            nn.Conv2d(hidden, 2 * c2, 1, bias=True),
+        )
+        self.gamma_scale = nn.Parameter(torch.tensor(float(gamma_init)))
+
+    def forward(self, x):
+        x = self.proj(x)
+        gamma, beta = self.context(x).chunk(2, 1)
+        prior = self.prior(x)
+        return x * (1.0 + self.gamma_scale * prior * gamma.sigmoid()) + self.gamma_scale * prior * beta
 class DAFuseST(nn.Module):
     """细节感知尺度自适应融合模块（v2）：用 softmax 分支权重替换普通 Concat。
 
@@ -904,3 +1078,5 @@ class Index(nn.Module):
             (torch.Tensor): Selected tensor.
         """
         return x[self.index]
+
+
