@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # 本实验：YOLO26 baseline + DySample
 # 目的：只替换颈部 neck 的两处 nearest 上采样，验证动态采样上采样对 VisDrone 小目标检测的作用。
 # 注意：这一步不加 P2、不加 DCLDown，方便后续做清晰的消融实验。
