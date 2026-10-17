@@ -1,4 +1,4 @@
-﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 from __future__ import annotations
 
@@ -114,13 +114,13 @@ class DFLoss(nn.Module):
 # tiny box 的 IoU 对几个像素的偏移极其敏感（甚至没有交并比），NWD 用高斯距离更平滑地
 # 度量定位误差，专门用于航拍 / 无人机 tiny object。这是"损失级"改进，只影响训练，
 # 推理阶段零额外计算，与轻量边缘部署路线完全兼容。
-NWD_ENABLED = False     # 总开关：结构实验默认关闭 NWD，避免 loss 改动污染模型结构对照
-NWD_ALPHA = 0.5         # NWD 在 box loss 中的占比，0.5 表示 CIoU 和 NWD 各占一半
-NWD_CONSTANT = 16.0     # 像素单位下的归一化常数；越小对 tiny box 越敏感（NWD 论文 AI-TOD 用 12.8）
+NWD_ENABLED = False  # 总开关：结构实验默认关闭 NWD，避免 loss 改动污染模型结构对照
+NWD_ALPHA = 0.5  # NWD 在 box loss 中的占比，0.5 表示 CIoU 和 NWD 各占一半
+NWD_CONSTANT = 16.0  # 像素单位下的归一化常数；越小对 tiny box 越敏感（NWD 论文 AI-TOD 用 12.8）
 
 
 def wasserstein_loss(pred_boxes, target_boxes, eps=1e-7, constant=NWD_CONSTANT):
-    """计算预测框与目标框之间的归一化 Wasserstein 距离相似度 (NWD)。
+    """计算预测框与目标框之间的归一化 Wasserstein 距离相似度 (NWD)。.
 
     Args:
         pred_boxes (Tensor): (N, 4) 预测框，xyxy 格式，像素单位。
@@ -1605,4 +1605,3 @@ class SemanticSegmentationLoss(nn.Module):
 
         loss_items = {"ce_loss": ce_loss.detach(), "dice_loss": dice_loss.detach(), "aux_loss": aux_loss.detach()}
         return total * preds.shape[0], loss_items
-
