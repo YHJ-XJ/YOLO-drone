@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # 本实验：YOLO26 baseline + WDCLDown（小波细节对比轻量下采样）。
 # 目的：验证 Haar 高频支路是否比 DCLDown 的 MaxPool-AvgPool 对比支路更能保留小目标细节。
 # 对比对象：

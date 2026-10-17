@@ -4,7 +4,6 @@ import random
 import shutil
 from pathlib import Path
 
-
 # CARPK 正式论文划分脚本：
 # 1. 原官方 train 按 80% / 20% 拆成 train / val
 # 2. 原官方 test 只作为最终 test
@@ -18,20 +17,20 @@ VAL_RATIO = 0.2
 
 
 def clear_dir(path: Path) -> None:
-    """清空并重建目标目录，避免重复运行时残留旧文件。"""
+    """清空并重建目标目录，避免重复运行时残留旧文件。."""
     if path.exists():
         shutil.rmtree(path)
     path.mkdir(parents=True, exist_ok=True)
 
 
 def copy_pair(image_path: Path, label_path: Path, image_dst: Path, label_dst: Path) -> None:
-    """复制一张图片和对应 YOLO 标签。"""
+    """复制一张图片和对应 YOLO 标签。."""
     shutil.copy2(image_path, image_dst / image_path.name)
     shutil.copy2(label_path, label_dst / label_path.name)
 
 
 def count_boxes(label_dir: Path) -> int:
-    """统计一个 split 中所有目标框数量。"""
+    """统计一个 split 中所有目标框数量。."""
     total = 0
     for label_path in label_dir.glob("*.txt"):
         text = label_path.read_text(encoding="utf-8").strip()
@@ -49,7 +48,7 @@ def main() -> None:
     random.seed(SEED)
     random.shuffle(train_images)
 
-    val_count = int(round(len(train_images) * VAL_RATIO))
+    val_count = round(len(train_images) * VAL_RATIO)
     val_names = {p.name for p in train_images[:val_count]}
 
     for image_path in train_images:
