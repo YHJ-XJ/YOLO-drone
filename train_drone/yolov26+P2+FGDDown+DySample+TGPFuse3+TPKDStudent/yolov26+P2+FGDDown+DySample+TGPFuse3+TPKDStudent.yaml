@@ -1,0 +1,54 @@
+# YOLO26 + P2 + FGDDown + DySample + TGPFuse3 + TPKDStudent
+# 目标：构建轻量化 Student，用当前最强 TGPFuse3 模型作为 Teacher 做知识蒸馏。
+# 创新点定位：Tiny-Prior Knowledge Distillation，同拓扑保留小目标先验融合路径，但降低通道宽度。
+
+nc: 10
+scale: n
+end2end: True
+reg_max: 1
+
+scales:
+  # [depth, width, max_channels]
+  # 相比 TGPFuse3 的 width=0.25，这里降到 0.20，先做稳健轻量化。
+  # 保持层索引和 Detect 输入不变，保证现有蒸馏接口能直接匹配 Teacher/Student 特征层。
+  n: [0.50, 0.20, 1024]
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, False, 0.25]] # 2
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, False, 0.25]] # 4
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, True]] # 6
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 2, C3k2, [1024, True]] # 8
+  - [-1, 1, SPPF, [1024, 5, 3, True]] # 9
+  - [-1, 2, C2PSA, [1024]] # 10
+
+head:
+  - [-1, 1, DySample, [2, 4, False]] # 11
+  - [[-1, 6], 1, Concat, [1]] # 12
+  - [-1, 2, C3k2, [512, True]] # 13
+
+  - [-1, 1, DySample, [2, 4, False]] # 14
+  - [[-1, 4], 1, TGPFuse, [1, -1, 4, 0.1]] # 15
+  - [-1, 2, C3k2, [256, True]] # 16
+
+  - [-1, 1, DySample, [2, 4, False]] # 17
+  - [[-1, 2], 1, TGPFuse, [1, -1, 4, 0.1]] # 18
+  - [-1, 2, C3k2, [128, True]] # 19
+
+  - [-1, 1, FGDDown, [128]] # 20
+  - [[-1, 16], 1, TGPFuse, [1, 0, 4, 0.1]] # 21
+  - [-1, 2, C3k2, [256, True]] # 22
+
+  - [-1, 1, Conv, [256, 3, 2]] # 23
+  - [[-1, 13], 1, Concat, [1]] # 24
+  - [-1, 2, C3k2, [512, True]] # 25
+
+  - [-1, 1, Conv, [512, 3, 2]] # 26
+  - [[-1, 10], 1, Concat, [1]] # 27
+  - [-1, 1, C3k2, [1024, True, 0.5, True]] # 28
+
+  - [[19, 22, 25, 28], 1, Detect, [nc]] # 29

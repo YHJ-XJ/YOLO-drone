@@ -1,0 +1,7 @@
+path: /root/autodl-tmp/yolo26_drone_package/datasets/CARPK-YOLO
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: car

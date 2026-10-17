@@ -82,6 +82,8 @@ from .conv import (
     WDCLDown,  #自编模块-小波细节对比轻量下采样，用于替换P2->P3下采样Conv
     DySample,  #自编模块4-动态采样上采样，用于替换YOLO颈部nearest上采样
     TGPFuse,  # 小目标先验引导融合，用于替换 Neck 中关键 Concat
+    P5SPF,  # P5语义保留式剪枝融合，用于删除P5检测头前把P5语义注入P4
+    TCA,  # 小目标轻量卷积注意力，用于Neck融合后特征校准
     TGPFuseSDFM,  # PSFusion-SDFM启发的小目标浅层细节融合
     TPCCSIM,  # Detect前的小目标先验一致性校准
     DAFuseST,  #自编模块5-小目标动态自适应融合，用于替换部分Concat
@@ -208,6 +210,8 @@ __all__ = (
     "WDCLDown",
     "DySample",
     "TGPFuse",
+    "P5SPF",
+    "TCA",
     "TGPFuseSDFM",
     "TPCCSIM",
     "DAFuseST",

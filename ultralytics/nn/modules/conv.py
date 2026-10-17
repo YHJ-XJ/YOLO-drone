@@ -51,7 +51,7 @@ class Conv(nn.Module):
 
     Attributes:
         conv (nn.Conv2d): Convolutional layer.
-        bn (nn.BatchNorm2d): Batch normalization layer.
+        bn (nn.BatchNorm2d): Batch normalization layer.批归一化层，使得每一层的输入数据分布保持稳定，避免梯度消失或梯度爆炸。同时在轻量化时该模块可以与上述模块进行融合以减少计算量
         act (nn.Module): Activation function layer.
         default_act (nn.Module): Default activation function (SiLU).
     """
@@ -69,7 +69,7 @@ class Conv(nn.Module):
             p (int, optional): Padding.
             g (int): Groups.
             d (int): Dilation.
-            act (bool | nn.Module): Activation function.
+            act (bool | nn.Module): Activation function.可以在这里指定想要的激活函数
         """
         super().__init__()
         self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
@@ -87,7 +87,7 @@ class Conv(nn.Module):
         """
         return self.act(self.bn(self.conv(x)))
 
-    def forward_fuse(self, x):
+    def forward_fuse(self, x): #此处即为上述提到的融合模块对应的前向传播，用于部署的时候
         """Apply convolution and activation without batch normalization.
 
         Args:
@@ -479,6 +479,102 @@ class TGPFuse(nn.Module):
         weights = self.branch_gate(cat).softmax(1)
         outs = [x * (1.0 + self.gamma * prior * weights[:, i : i + 1]) for i, x in enumerate(xs)]
         return torch.cat(outs, self.d)
+
+
+class P5SPF(nn.Module):
+    """P5 Semantic Preserving Fusion（P5语义保留式剪枝融合）。
+
+    用于删除 P5 检测头前，把 P5 深层语义轻量注入 P4：
+      1. P5 分支先通过 1x1 Conv 对齐到 P4 通道；
+      2. 从 P4 生成细节门控，保留小目标定位信息；
+      3. 从 P5 生成语义门控，补偿删除 P5 检测头后的高层语义损失；
+      4. 输出通道仍等于 P4，不做通道拼接，避免计算量明显增加。
+    """
+
+    def __init__(self, channels, reduction=4, gamma_init=0.1):
+        super().__init__()
+        assert len(channels) == 2, "P5SPF expects two inputs: [P4_feature, P5_upsampled_feature]"
+        c_p4, c_p5 = channels
+        hidden = max(c_p4 // reduction, 8)
+
+        # 将上采样后的 P5 语义特征压到 P4 通道，避免 Concat 带来的通道膨胀。
+        self.p5_proj = Conv(c_p5, c_p4, 1, 1)
+
+        # P4 细节门控：强调高分辨率下的小目标边缘、纹理与定位信息。
+        self.detail_gate = nn.Sequential(
+            Conv(c_p4, hidden, 1, 1),
+            nn.Conv2d(hidden, 1, 3, padding=1, bias=True),
+            nn.Sigmoid(),
+        )
+
+        # P5 语义门控：根据深层语义判断哪些区域需要被注入到 P4。
+        self.semantic_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            Conv(c_p4, hidden, 1, 1),
+            nn.Conv2d(hidden, c_p4, 1, bias=True),
+            nn.Sigmoid(),
+        )
+
+        # 残差强度小初始化，使训练初期接近原 P4 特征，避免破坏预训练表示。
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init)))
+        self.fuse = Conv(c_p4, c_p4, 3, 1)
+
+    def forward(self, xs):
+        p4, p5 = xs
+        p5 = self.p5_proj(p5)
+        detail = self.detail_gate(p4)
+        semantic = self.semantic_gate(p5)
+        out = p4 * (1.0 + self.gamma * detail) + self.gamma * semantic * p5
+        return self.fuse(out)
+
+
+class TCA(nn.Module):
+    """Tiny Convolutional Attention（小目标轻量卷积注意力）。
+
+    用于 Neck 融合后的 P3/P4 特征校准：
+      1. 1x1 Conv 先做通道对齐；
+      2. 深度 3x3 卷积提取局部边缘和纹理；
+      3. 深度 5x5 卷积扩大局部上下文感受野；
+      4. 生成轻量空间注意力图，以残差方式增强小目标响应。
+
+    该模块不改变特征图尺寸，适合插入 Detect 前或 Neck 融合后的关键层。
+    """
+
+    def __init__(self, c1, c2, reduction=4, gamma_init=0.1):
+        super().__init__()
+        hidden = max(c2 // reduction, 8)
+        self.proj = Conv(c1, c2, 1, 1) if c1 != c2 else nn.Identity()
+
+        # 局部纹理分支：更关注小目标边缘、角点和密集局部结构。
+        self.local = nn.Sequential(
+            nn.Conv2d(c2, c2, 3, padding=1, groups=c2, bias=False),
+            nn.BatchNorm2d(c2),
+            nn.SiLU(),
+        )
+
+        # 上下文分支：5x5 深度卷积扩大感受野，但不引入大量参数。
+        self.context = nn.Sequential(
+            nn.Conv2d(c2, c2, 5, padding=2, groups=c2, bias=False),
+            nn.BatchNorm2d(c2),
+            nn.SiLU(),
+        )
+
+        self.attn = nn.Sequential(
+            Conv(c2 * 2, hidden, 1, 1),
+            nn.Conv2d(hidden, 1, 1, bias=True),
+            nn.Sigmoid(),
+        )
+
+        # 小初始化：训练初期接近恒等映射，降低破坏预训练特征的风险。
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init)))
+        self.out = Conv(c2, c2, 1, 1)
+
+    def forward(self, x):
+        x = self.proj(x)
+        local = self.local(x)
+        context = self.context(x)
+        weight = self.attn(torch.cat((local, context), 1))
+        return self.out(x * (1.0 + self.gamma * weight))
 
 
 class TGPFuseSDFM(nn.Module):

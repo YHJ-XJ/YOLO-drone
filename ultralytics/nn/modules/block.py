@@ -223,7 +223,7 @@ class SPPF(nn.Module):
             This module is equivalent to SPP(k=(5, 9, 13)).
         """
         super().__init__()
-        c_ = c1 // 2  # hidden channels
+        c_ = c1 // 2  # 表示隐藏层的通道数
         self.cv1 = Conv(c1, c_, 1, 1, act=False)
         self.cv2 = Conv(c_ * (n + 1), c2, 1, 1)
         self.m = nn.MaxPool2d(kernel_size=k, stride=1, padding=k // 2)

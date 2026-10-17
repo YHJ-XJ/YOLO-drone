@@ -82,6 +82,8 @@ from ultralytics.nn.modules import (
     WDCLDown,
     DySample,
     TGPFuse,
+    P5SPF,
+    TCA,
     TGPFuseSDFM,
     TPCCSIM,
     DAFuseST,
@@ -2021,6 +2023,7 @@ def parse_model(d, ch, verbose=True):
             LFGDDown,
             DCLDown,
             WDCLDown,
+            TCA,
             TPCCSIM,
         }
     )
@@ -2103,6 +2106,11 @@ def parse_model(d, ch, verbose=True):
         elif m is TGPFuse:
             # TGPFuse 与 Concat 一样沿通道拼接输出，但内部会根据 tiny prior 做残差门控。
             c2 = sum(ch[x] for x in f)
+            args = [[ch[x] for x in f], *args]
+        elif m is P5SPF:
+            # P5SPF 用 P5 语义增强 P4 后直接输出 P4 通道数，不做 Concat 通道膨胀。
+            # f 必须是 [P4_feature, P5_upsampled_feature]。
+            c2 = ch[f[0]]
             args = [[ch[x] for x in f], *args]
         elif m is TGPFuseSDFM:
             # TGPFuseSDFM 与 Concat 一样输出通道拼接结果，但内部加入 SDFM 风格的浅层细节融合。

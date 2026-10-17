@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -417,6 +418,24 @@ class v8DetectionLoss:
         if self.class_weights is not None:
             self.class_weights = self.class_weights.to(device).view(1, 1, -1)
 
+        # CS-SlideLoss: Class-Scale aware sliding classification loss.
+        # It is disabled by default and enabled only when YOLO_CS_SLIDE=1 is set by a training script.
+        self.cs_slide = os.getenv("YOLO_CS_SLIDE", "0") == "1"
+        self.cs_slide_gain = float(os.getenv("YOLO_CS_SLIDE_GAIN", "0.6"))
+        self.cs_slide_gamma = float(os.getenv("YOLO_CS_SLIDE_GAMMA", "1.0"))
+        self.cs_scale_gain = float(os.getenv("YOLO_CS_SCALE_GAIN", "0.5"))
+        self.cs_scale_max = float(os.getenv("YOLO_CS_SCALE_MAX", "1.8"))
+        cs_weights = os.getenv(
+            "YOLO_CS_CLASS_WEIGHTS",
+            "0.7019,0.8457,1.0555,0.6494,0.8600,1.0011,1.3197,1.4980,1.2387,0.8303",
+        )
+        self.cs_class_weights = None
+        if self.cs_slide:
+            weights = [float(x) for x in cs_weights.split(",")]
+            if len(weights) != self.nc:
+                raise ValueError(f"YOLO_CS_CLASS_WEIGHTS expects {self.nc} values, got {len(weights)}")
+            self.cs_class_weights = torch.tensor(weights, device=device, dtype=torch.float32).view(1, 1, -1)
+
         self.assigner = TaskAlignedAssigner(
             topk=tal_topk,
             num_classes=self.nc,
@@ -494,6 +513,23 @@ class v8DetectionLoss:
         bce_loss = self.bce(pred_scores, target_scores.to(dtype))  # (bs, num_anchors, nc)
         if self.class_weights is not None:
             bce_loss *= self.class_weights
+        if self.cs_slide:
+            with torch.no_grad():
+                # Difficulty-aware sliding term: low p_t means harder samples and receives a larger weight.
+                pred_prob = pred_scores.detach().sigmoid()
+                p_t = target_scores * pred_prob + (1.0 - target_scores) * (1.0 - pred_prob)
+                slide_weight = 1.0 + self.cs_slide_gain * (1.0 - p_t).clamp(0, 1).pow(self.cs_slide_gamma)
+
+                # Scale-aware term: positive anchors assigned to smaller boxes receive a larger weight.
+                scale_weight = torch.ones_like(target_scores)
+                if fg_mask.any():
+                    wh = (target_bboxes[..., 2:4] - target_bboxes[..., 0:2]).clamp(min=0)
+                    area = (wh[..., 0:1] * wh[..., 1:2]) / (imgsz[0] * imgsz[1] + 1e-9)
+                    small = 1.0 + self.cs_scale_gain * (1.0 - area.sqrt()).clamp(0, 1)
+                    small = small.clamp(max=self.cs_scale_max)
+                    scale_weight = torch.where(target_scores.gt(0), small, scale_weight)
+
+            bce_loss = bce_loss * slide_weight * scale_weight * self.cs_class_weights.to(dtype)
         loss[1] = bce_loss.sum() / target_scores_sum  # BCE
 
         # Bbox loss

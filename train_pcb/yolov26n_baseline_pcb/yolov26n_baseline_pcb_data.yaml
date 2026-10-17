@@ -1,0 +1,12 @@
+path: /root/autodl-tmp/yolo26_drone_package/datasets/PCB-YOLO
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: Missing_Hole
+  1: MouseBite
+  2: Open_Circuit
+  3: Short_Circuit
+  4: Spur
+  5: Spurious_Copper
