@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # YOLO26 + P2 + FGDDown + DySample + TPCCSIM
 # 5轮预验证：判断Detect前小目标先验一致性校准是否值得正式训练。
 model = YOLO("train_drone/yolov26+P2+FGDDown+DySample+TPCCSIM/yolov26+P2+FGDDown+DySample+TPCCSIM.yaml")
