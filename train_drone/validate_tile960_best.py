@@ -2,7 +2,6 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
-
 # 低成本复验脚本：只验证 Tile960 的 best.pt，不训练。
 # 用于确认当前 best.pt 的真实指标，并生成 PR/F1 曲线和混淆矩阵。
 root = Path("/root/autodl-tmp/yolo26_drone_package/yolo26")

@@ -3,10 +3,10 @@
 # DCLDown：替换 backbone 中 P2/4 -> P3/8 的 stride=2 Conv，尽量保留小目标细节。
 # DySample：替换 neck/head 中两处 nearest 上采样，让跨尺度融合时的特征恢复更加自适应。
 
-nc: 10  # VisDrone 转 YOLO 后的 10 个有效类别
-scale: n  # 使用 YOLO26n 规模，与 yolo26n.pt 预训练权重对应
-end2end: True  # 保持 YOLO26 官方端到端检测设置
-reg_max: 1  # 保持官方 YOLO26 配置，便于和 baseline 公平对比
+nc: 10 # VisDrone 转 YOLO 后的 10 个有效类别
+scale: n # 使用 YOLO26n 规模，与 yolo26n.pt 预训练权重对应
+end2end: True # 保持 YOLO26 官方端到端检测设置
+reg_max: 1 # 保持官方 YOLO26 配置，便于和 baseline 公平对比
 
 scales:
   # [depth, width, max_channels]
