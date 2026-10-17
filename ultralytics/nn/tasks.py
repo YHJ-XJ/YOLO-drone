@@ -1,4 +1,4 @@
-﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 from __future__ import annotations
 
@@ -23,10 +23,13 @@ from ultralytics.nn.modules import (
     ELAN1,
     OBB,
     OBB26,
+    P5SPF,
     PSA,
     SPP,
     SPPELAN,
     SPPF,
+    TCA,
+    TPCCSIM,
     A2C2f,
     AConv,
     ADown,
@@ -46,11 +49,16 @@ from ultralytics.nn.modules import (
     Conv,
     Conv2,
     ConvTranspose,
+    DAFuseST,
+    DCLDown,
     Depth,
     Detect,
     DWConv,
     DWConvTranspose2d,
+    DySample,
+    FGDDown,
     Focus,
+    GFGDDown,
     GhostBottleneck,
     GhostConv,
     HGBlock,
@@ -70,23 +78,15 @@ from ultralytics.nn.modules import (
     Segment,
     Segment26,
     SemanticSegment,
+    TGPFuse,
+    TGPFuseSDFM,
     TorchVision,
+    WDCLDown,
     WorldDetect,
     YOLOEDetect,
     YOLOESegment,
     YOLOESegment26,
     v10Detect,
-    FGDDown,
-    GFGDDown,
-    DCLDown,
-    WDCLDown,
-    DySample,
-    TGPFuse,
-    P5SPF,
-    TCA,
-    TGPFuseSDFM,
-    TPCCSIM,
-    DAFuseST,
 )
 from ultralytics.nn.modules.conv import LFGDDown
 from ultralytics.utils import (
@@ -2296,5 +2296,3 @@ def guess_model_task(model):
         "Explicitly define task for your model, i.e. 'task=detect', 'segment', 'classify', 'pose', 'obb' or 'semantic'."
     )
     return "detect"  # assume detect
-
-

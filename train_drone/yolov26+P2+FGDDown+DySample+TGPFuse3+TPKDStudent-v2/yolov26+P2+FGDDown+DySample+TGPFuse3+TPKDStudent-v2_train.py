@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # TPKDStudent-v2：Tiny-Prior Knowledge Distillation Student 第二版
 # v1 的 width=0.20 压缩过猛，精度基本只接近 baseline。
 # v2 将 width 提到 0.225，并把蒸馏权重 dis 从 0.5 降到 0.3：

@@ -32,12 +32,12 @@
 
 ### 优先评估的期刊
 
-| 候选期刊 | 适配的论文主张 | 当前已核对的信息 | 投稿前仍须确认 |
-|---|---|---|---|
-| **Drones** | 无人机应用、小目标检测、平台约束 | 官网显示 2025 影响因子 **5.2**；JCR **Remote Sensing 类 Q2**；APC **CHF 2600**。[期刊历史](https://www.mdpi.com/journal/drones/history)、[APC](https://www.mdpi.com/journal/drones/apc) | 本校认可情况、费用、当前模板 |
-| **Remote Sensing** | 遥感场景、跨数据集泛化与应用分析 | 官网显示 2025 影响因子 **4.3**；JCR 的 **Geosciences, Multidisciplinary 类 Q1**、**Remote Sensing 类 Q2**。[官方统计](https://www.mdpi.com/journal/remotesensing/stats) | 投稿当日 APC、目标学科分类 |
-| **IEEE J-STARS** | 遥感应用技术，要求技术贡献和实验完整 | 官方说明为全开放获取；2025-01-01 起投稿的 APC 为 **USD 1800**，并要求技术内容具有新颖性和重要性。[作者指南](https://www.grss-ieee.org/publications/jstars-information-for-authors/) | 当前页数/图件要求、基金是否可支付 APC |
-| **Journal of Real-Time Image Processing** | 真实设备上的端到端时延、吞吐、内存与精度取舍 | 只有完成可重复的端侧实验后，这条叙事才充分 | 官方作者指南、费用与学校认可情况 |
+| 候选期刊                                  | 适配的论文主张                               | 当前已核对的信息                                                                                                                                                                        | 投稿前仍须确认                        |
+| ----------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **Drones**                                | 无人机应用、小目标检测、平台约束             | 官网显示 2025 影响因子 **5.2**；JCR **Remote Sensing 类 Q2**；APC **CHF 2600**。[期刊历史](https://www.mdpi.com/journal/drones/history)、[APC](https://www.mdpi.com/journal/drones/apc) | 本校认可情况、费用、当前模板          |
+| **Remote Sensing**                        | 遥感场景、跨数据集泛化与应用分析             | 官网显示 2025 影响因子 **4.3**；JCR 的 **Geosciences, Multidisciplinary 类 Q1**、**Remote Sensing 类 Q2**。[官方统计](https://www.mdpi.com/journal/remotesensing/stats)                 | 投稿当日 APC、目标学科分类            |
+| **IEEE J-STARS**                          | 遥感应用技术，要求技术贡献和实验完整         | 官方说明为全开放获取；2025-01-01 起投稿的 APC 为 **USD 1800**，并要求技术内容具有新颖性和重要性。[作者指南](https://www.grss-ieee.org/publications/jstars-information-for-authors/)     | 当前页数/图件要求、基金是否可支付 APC |
+| **Journal of Real-Time Image Processing** | 真实设备上的端到端时延、吞吐、内存与精度取舍 | 只有完成可重复的端侧实验后，这条叙事才充分                                                                                                                                              | 官方作者指南、费用与学校认可情况      |
 
 ### 后续候选与投稿次序
 
@@ -50,18 +50,22 @@ Sensors、IEEE Access、Scientific Reports、International Journal of Remote Sen
 ## 二、论文格式要求
 
 ### 2.1 Drones / Remote Sensing（MDPI 通用模板）
+
 - 使用目标期刊投稿时提供的最新 Word 或 LaTeX 模板；先完成内容，再按期刊要求排版。
 - 稿件逻辑：问题与研究空白 → 方法与复杂度 → 数据与公平对照 → 结果及误差分析 → 端侧测量 → 局限性与结论。最终栏目名称、摘要字数和声明项以投稿当日作者指南为准。
 - 数据可用性声明只写实际公开的数据、代码和权重；尚未公开的内容不得写成“已开源”。
 
 ### 2.2 IEEE JSTARS
+
 - 官方要求双栏、单倍行距投稿；摘要为 **150～250 词**。用投稿时的 IEEE 模板，并在提交前检查图像分辨率和图注。[官方作者指南](https://www.grss-ieee.org/publications/jstars-information-for-authors/)
 - 该刊强调技术内容的新颖性、重要性和完整实验；若只把已有模块与数据增强叠加，投稿风险较高。
 
 ### 2.3 Scientific Reports（Nature 格式）
+
 - 作为备选时，按当期作者指南确定栏目、篇幅、声明和图表格式。
 
 ### 2.4 其他档位期刊格式速记
+
 - 其余候选期刊均以各自官网当前模板和作者指南为准；不能把 J-STARS 的页数、费用或版权规定直接套到 IEEE Access，也不能把一个 Springer 期刊的模板套到另一个期刊。
 
 ### 2.5 论文证据清单
@@ -76,13 +80,13 @@ Sensors、IEEE Access、Scientific Reports、International Journal of Remote Sen
 
 ## 三、投稿时间线（倒排）
 
-| 时间窗口 | 任务 | 产出 |
-|---|---|---|
-| 10-14 ～ 10-25 | Phase A：数据与基线审计，固定公平比较协议 | 冻结划分、配置和评价口径 |
-| 10-26 ～ 11-20 | Phase B：按优先级筛选长尾和尺度策略 | 单变量实验、按类与小目标结果 |
-| 11-21 ～ 12-20 | Phase C：关键组合、多种子确认、端侧测试 | 冻结用于写作的结果与模型 |
-| 12-21 ～ 2027-01-31 | Phase D：论文写作、证据复核、导师修改 | 可投稿初稿与图表 |
-| 2027-02-01 ～ 02-10 | 按目标期刊模板检查、提交 | 投稿；录用日期无法预先保证 |
+| 时间窗口            | 任务                                      | 产出                         |
+| ------------------- | ----------------------------------------- | ---------------------------- |
+| 10-14 ～ 10-25      | Phase A：数据与基线审计，固定公平比较协议 | 冻结划分、配置和评价口径     |
+| 10-26 ～ 11-20      | Phase B：按优先级筛选长尾和尺度策略       | 单变量实验、按类与小目标结果 |
+| 11-21 ～ 12-20      | Phase C：关键组合、多种子确认、端侧测试   | 冻结用于写作的结果与模型     |
+| 12-21 ～ 2027-01-31 | Phase D：论文写作、证据复核、导师修改     | 可投稿初稿与图表             |
+| 2027-02-01 ～ 02-10 | 按目标期刊模板检查、提交                  | 投稿；录用日期无法预先保证   |
 
 > 与 IGARSS 2027 的关系见 §七。
 
@@ -129,23 +133,28 @@ Sensors、IEEE Access、Scientific Reports、International Journal of Remote Sen
 > 本节讨论可测试的训练与推理策略，不预设效果。自研模块是否构成论文贡献，同样须经相关工作检索、消融和独立验证；“自己写了代码”本身不足以证明新颖性。
 
 ### 5.1 尾部类 Copy-Paste
+
 - **原理**：提高训练时尾部类实例的出现频率，以检验类别不平衡是否限制召回率。既有训练集统计提示类别不均衡，但正式论文应重算并保存统计脚本。
 - **做法**：只从 train 构建实例库；记录每个实例来源及粘贴目标图，控制大小、遮挡、背景合理性和重叠。优先做少量人工可视化质检，再生成完整训练集；val/test 不变。矩形框裁剪只能作为试验性原型，不能把矩形背景一起粘贴后的结果解释成“无噪声实例粘贴”。
 - **验收**：报告每类 AP、误检、总体 mAP50-95 和三种子方差；若只改善少数类却损害总体指标，需如实报告。
 
 ### 5.2 简化的稀有类别图片重复采样
+
 - **原理**：让含稀有类别的训练图片更频繁出现，以改变梯度更新频率。下方固定重复次数的清单只借鉴 RFS 思路，不能称为 Detectron2/LVIS 原始 RFS 算法。
 - **做法**：按**含该类的图片数 / 训练图片总数**估计类别频率，基于预设阈值生成重复采样清单；阈值和重复次数在验证集上选，禁止使用测试集调参。若训练框架对重复路径去重或缓存，须检查实际每 epoch 抽样分布。
 - **风险**：重复同一图不会增加场景多样性，可能过拟合背景；单独与组合实验都需要报告。
 
 ### 5.3 基线重训对齐（地基）
+
 - 见 Phase A。旧探索结果的训练轮数和选模条件不同，不能充当正式实验对照。
 
 ### 5.4 SAHI 切片推理 / 多尺度测试（推理期增强）
+
 - **原理**：切片会使小目标在模型输入中的相对尺度增大，但也会增加每张原图的推理次数及合并开销。
 - **做法**：在同一原图验证集上比较直接推理和切片推理，映射回原图坐标后计算 AP，并记录切片数、合并方法与端到端延迟。若树莓派 5 的实时性受损，应将其定位为高精度离线推理策略。
 
 ### 5.5（可选）蒸馏收尾
+
 - 旧 TPKDStudent v1 在 width=0.20 下失败。投稿前不新增蒸馏主线；若后续重启，先归因失败并做独立对照。
 
 ---
@@ -167,15 +176,15 @@ Sensors、IEEE Access、Scientific Reports、International Journal of Remote Sen
 以下代码只生成候选清单；运行前核对图片扩展名、路径和训练器是否保留同一路径的重复项。正式实验需要记录实际采样频率。
 
 ```python
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 
 LBL_DIR = Path("datasets/VisDrone-YOLO/train/labels")
 IMG_DIR = Path("datasets/VisDrone-YOLO/train/images")
 OUT = Path("datasets/VisDrone-YOLO/train_repeated.txt")
 TAIL_CLASSES = {1, 2, 6, 7}  # 按 data.yaml 核对
-THRESH = 0.02               # 仅为待验证的超参数
-REPEAT = 6                  # 仅为待验证的超参数
+THRESH = 0.02  # 仅为待验证的超参数
+REPEAT = 6  # 仅为待验证的超参数
 
 items = []
 images = sorted(p for p in IMG_DIR.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
@@ -183,7 +192,8 @@ for image in images:
     label = LBL_DIR / f"{image.stem}.txt"
     classes = (
         {int(line.split()[0]) for line in label.read_text(encoding="utf-8").splitlines() if line.strip()}
-        if label.exists() else set()
+        if label.exists()
+        else set()
     )
     items.append((image.resolve(), classes))
 
@@ -254,11 +264,11 @@ for p in result.object_prediction_list:
 
 ```bash
 yolo detect train \
-model=yolo26n.pt \
-data=train_drone/visdrone.yaml \
-epochs=200 imgsz=960 batch=8 workers=8 \
-amp=True close_mosaic=10 seed=0 patience=50 device=0 \
-project=train_baseline name=yolo26n_aligned200
+  model=yolo26n.pt \
+  data=train_drone/visdrone.yaml \
+  epochs=200 imgsz=960 batch=8 workers=8 \
+  amp=True close_mosaic=10 seed=0 patience=50 device=0 \
+  project=train_baseline name=yolo26n_aligned200
 ```
 
 ---
@@ -278,23 +288,23 @@ IGARSS 2027 [官网](https://2027.ieeeigarss.org/important_dates.php)公布：�
 
 ### 8.1 已有方法与待核查问题
 
-| 手段 | 目前可确定的定位 | 投稿前需要补的证据 |
-|---|---|---|
-| Copy-Paste 与类别均衡采样 | 已有广泛先例，先作为训练策略 | 核对原始论文、DOI、代码与 VisDrone 场景的关系；比较数据选择规则与本项目差别 |
-| Repeat-Factor Sampling | 已有先例，先作为采样对照 | 核对 LVIS/RFS 原论文和当前框架的实际采样实现 |
-| SAHI、切片训练 | 已有先例，分别作为推理与训练策略 | 核对 SAHI 原论文、合并规则及 VisDrone 上的公平比较 |
-| 基线重训、日志与多种子 | 研究可信度要求 | 不写作算法创新，但作为实验协议明确说明 |
+| 手段                      | 目前可确定的定位                 | 投稿前需要补的证据                                                          |
+| ------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
+| Copy-Paste 与类别均衡采样 | 已有广泛先例，先作为训练策略     | 核对原始论文、DOI、代码与 VisDrone 场景的关系；比较数据选择规则与本项目差别 |
+| Repeat-Factor Sampling    | 已有先例，先作为采样对照         | 核对 LVIS/RFS 原论文和当前框架的实际采样实现                                |
+| SAHI、切片训练            | 已有先例，分别作为推理与训练策略 | 核对 SAHI 原论文、合并规则及 VisDrone 上的公平比较                          |
+| 基线重训、日志与多种子    | 研究可信度要求                   | 不写作算法创新，但作为实验协议明确说明                                      |
 
 先前笔记提到 ECopy-Paste、DCC、IRFS 等工作，但本计划尚未附可核验的完整书目信息。正式引用前逐篇核对作者、标题、年份、DOI、任务、数据集和方法差异；不要把“相似”直接写成“同构”，也不要把搜索摘要当作新颖性结论。
 
 ### 8.2 候选贡献与验证门槛
 
-| 候选 | 可以检验的机制主张 | 要求的对照 |
-|---|---|---|
-| **TGPFuse3** | 小目标先验是否改善跨尺度融合 | 与同位置 Concat、BiFPN/类似融合方案比较；报告按尺寸和按类 AP |
+| 候选           | 可以检验的机制主张                                   | 要求的对照                                                      |
+| -------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
+| **TGPFuse3**   | 小目标先验是否改善跨尺度融合                         | 与同位置 Concat、BiFPN/类似融合方案比较；报告按尺寸和按类 AP    |
 | **P5SPFPrune** | 移除 P5 检测头后，语义注入是否比直接删头更能保住精度 | 原模型、直接删头、删头+语义注入；同时报告参数、GFLOPs、端侧延迟 |
-| **FGDDown** | 双路径下采样是否减少细节损失 | 与同位置普通下采样及相近复杂度方案比较 |
-| **TCA_P3** | P3 位置的注意力是否有独立收益 | 无注意力、P3、P3+P4；解释负结果 |
+| **FGDDown**    | 双路径下采样是否减少细节损失                         | 与同位置普通下采样及相近复杂度方案比较                          |
+| **TCA_P3**     | P3 位置的注意力是否有独立收益                        | 无注意力、P3、P3+P4；解释负结果                                 |
 
 投稿前建立“论文—机制—代码—差异—证据”矩阵：每个候选至少列最接近的 3～5 项先前工作，注明检索式、检索日期、DOI/链接和与本项目的具体区别。若差异只在模块重新组合，应降低“提出新结构”的表述强度，转向系统实验和端侧验证。当前任何模块都不能仅凭命名宣称新颖。
 
@@ -319,12 +329,12 @@ IGARSS 2027 [官网](https://2027.ieeeigarss.org/important_dates.php)公布：�
 
 以下统一引用[实验登记表](../../研究重启_2026-09-25/01_实验登记表.csv)的“按 mAP50-95 选择 epoch 后的同一行指标”。不同实验的训练轮数、数据策略和输入条件尚未完全对齐，**不得把表中差值写成正式方法增益**。
 
-| 编号与模型 | mAP50 | mAP50-95 | 参数量 | 限制 |
-|---|---:|---:|---:|---|
-| E00 YOLO26n baseline | 0.41202 | 0.24407 | 2.572M | 100 epoch，待对齐重训 |
-| E03 +P2+FGDDown+DySample | 0.43200 | 0.25982 | 2.535M | 200 epoch |
-| E04 +TGPFuse3 | 0.43740 | 0.26402 | 2.542M | 156 epoch |
-| E06 +P5SPFPrune+TCA_P3 | 0.43935 | 0.26568 | 2.037M | 164 epoch；端侧延迟未测 |
-| E08 +TCA_P3+Tile960 | 0.44426 | 0.27655 | 待核 | 117 epoch 中断，选第 93 epoch；数据策略不同 |
+| 编号与模型               |   mAP50 | mAP50-95 | 参数量 | 限制                                        |
+| ------------------------ | ------: | -------: | -----: | ------------------------------------------- |
+| E00 YOLO26n baseline     | 0.41202 |  0.24407 | 2.572M | 100 epoch，待对齐重训                       |
+| E03 +P2+FGDDown+DySample | 0.43200 |  0.25982 | 2.535M | 200 epoch                                   |
+| E04 +TGPFuse3            | 0.43740 |  0.26402 | 2.542M | 156 epoch                                   |
+| E06 +P5SPFPrune+TCA_P3   | 0.43935 |  0.26568 | 2.037M | 164 epoch；端侧延迟未测                     |
+| E08 +TCA_P3+Tile960      | 0.44426 |  0.27655 |   待核 | 117 epoch 中断，选第 93 epoch；数据策略不同 |
 
 **待完成**：统一预算与三随机种子；按类和按尺寸 AP；逐模块消融；跨数据集泛化；树莓派 5 端到端延迟；先前工作对比矩阵。只有这些证据齐备后，才能锁定最终论文标题、贡献和投稿期刊。

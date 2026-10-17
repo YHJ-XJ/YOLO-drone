@@ -1,6 +1,5 @@
 import os
 
-
 # CS-SlideLoss：类别-尺度感知滑动损失
 # 该损失只在训练阶段启用，不改变模型结构，不增加推理参数量和 FLOPs。
 # 设计目的：
@@ -14,7 +13,6 @@ os.environ["YOLO_CS_SCALE_GAIN"] = "0.5"
 os.environ["YOLO_CS_SCALE_MAX"] = "1.8"
 
 from ultralytics import YOLO
-
 
 model = YOLO(
     "train_drone/yolov26+P2+FGDDown+DySample+TGPFuse3+P5SPFPrune+CSSlideLoss/yolov26+P2+FGDDown+DySample+TGPFuse3+P5SPFPrune+CSSlideLoss.yaml"
