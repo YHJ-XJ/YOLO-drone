@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # YOLO26 + P2 + FGDDown + DySample + TGPFuse3
 # 5轮预验证：判断普通 TGPFuse 替换3处关键Concat后，早期趋势是否优于当前E12底座。
 model = YOLO("train_drone/yolov26+P2+FGDDown+DySample+TGPFuse3/yolov26+P2+FGDDown+DySample+TGPFuse3.yaml")
