@@ -2,10 +2,10 @@
 # 本配置是当前主线候选：保留已验证有效的 DySample，再加入轻量动态融合 DAFuseST。
 # 目标：不增加 P2 检测头，在低计算量下提升无人机小目标的跨尺度融合质量。
 
-nc: 10  # VisDrone 转 YOLO 后的 10 个有效类别
-scale: n  # 使用 YOLO26n 规模，和 yolo26n.pt 预训练权重对应
-end2end: True  # 保持 YOLO26 官方端到端检测设置
-reg_max: 1  # 保持官方 YOLO26 配置，保证和 baseline 公平对比
+nc: 10 # VisDrone 转 YOLO 后的 10 个有效类别
+scale: n # 使用 YOLO26n 规模，和 yolo26n.pt 预训练权重对应
+end2end: True # 保持 YOLO26 官方端到端检测设置
+reg_max: 1 # 保持官方 YOLO26 配置，保证和 baseline 公平对比
 
 scales:
   # [depth, width, max_channels]

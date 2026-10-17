@@ -1,5 +1,4 @@
-﻿from ultralytics import YOLO
-
+from ultralytics import YOLO
 
 # 本实验：YOLO26 + P2 + FGDDown + DySample
 # 注意：训练前请确认 ultralytics/utils/loss.py 中 NWD_ENABLED=False，保证这次只验证结构改进。
