@@ -1,9 +1,8 @@
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 import cv2
 import numpy as np
-
 
 PROJECT_ROOT = Path(r"F:\图像深度学习科研\面向边缘设备部署的无人机小目标轻量化检测算法研究")
 SRC_ROOT = PROJECT_ROOT / "数据集汇总" / "drone_car数据集" / "datasets" / "CARPK_devkit" / "data"
