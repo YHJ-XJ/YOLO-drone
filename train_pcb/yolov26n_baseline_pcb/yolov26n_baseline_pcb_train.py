@@ -2,7 +2,6 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
-
 # PCB 缺陷检测 baseline。
 # 这一组不加入任何自研模块，用来判断 PCB 数据集是否适合作为“高基线 + 再涨点”的论文主数据集。
 THIS_DIR = Path(__file__).resolve().parent

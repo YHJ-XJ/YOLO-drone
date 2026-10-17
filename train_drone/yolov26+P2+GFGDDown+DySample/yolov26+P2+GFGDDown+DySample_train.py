@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # 本实验：YOLO26 + P2 + GFGDDown + DySample
 # 单变量对照：相对 E12，只把 FGDDown 替换为门控版 GFGDDown。
 # 训练前确认：ultralytics/utils/loss.py 中 NWD_ENABLED=False。

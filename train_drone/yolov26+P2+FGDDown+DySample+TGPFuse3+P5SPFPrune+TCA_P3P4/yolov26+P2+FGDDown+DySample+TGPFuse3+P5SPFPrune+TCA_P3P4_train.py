@@ -1,11 +1,9 @@
 import os
 
-
 # 结构实验：关闭 CS-SlideLoss，避免损失函数和结构改进混在一起。
 os.environ["YOLO_CS_SLIDE"] = "0"
 
 from ultralytics import YOLO
-
 
 # TCA_P3P4：
 # 在 TCA_P3 的基础上，额外对 P5SPF 后的 P4 语义特征加入轻量卷积注意力。
