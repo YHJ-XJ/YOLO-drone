@@ -2,7 +2,6 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
-
 # 训练完成后，用 best.pt 在 test 集上做最终测试。
 # 脚本会自动寻找最近一次 yolov26n_baseline_pcb 开头的训练结果目录。
 THIS_DIR = Path(__file__).resolve().parent
