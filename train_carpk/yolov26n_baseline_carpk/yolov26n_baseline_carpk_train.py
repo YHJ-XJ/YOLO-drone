@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # CARPK 无人机车辆检测 baseline。
 # 先用官方 YOLO26n 预训练权重，确认该数据集是否能形成高 mAP50 基线。
 model = YOLO("yolo26n.pt")
