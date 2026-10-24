@@ -2,7 +2,6 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
-
 # CARPK 正式划分版 baseline：
 # train/val 来自官方训练集拆分，test 保留官方测试集。
 # 这一组结果将作为后续所有 CARPK 改进模型的正式对照基线。

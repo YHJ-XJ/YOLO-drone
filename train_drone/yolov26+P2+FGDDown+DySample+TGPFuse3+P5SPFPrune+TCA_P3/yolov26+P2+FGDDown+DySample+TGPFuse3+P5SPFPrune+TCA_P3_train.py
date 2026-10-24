@@ -1,11 +1,9 @@
 import os
 
-
 # 本实验是结构实验，不启用 CS-SlideLoss，避免和 TCA 的效果混在一起。
 os.environ["YOLO_CS_SLIDE"] = "0"
 
 from ultralytics import YOLO
-
 
 # TCA_P3：Tiny Convolutional Attention at P3
 # 只在 P4->P3 融合后的 P3 特征处加入轻量卷积注意力。
