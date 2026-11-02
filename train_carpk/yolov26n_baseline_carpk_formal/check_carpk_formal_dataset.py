@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 # 检查 AutoDL 上传后的正式 CARPK 数据集结构是否完整。
 # 运行位置建议为：/root/autodl-tmp/yolo26_drone_package/yolo26
 PACKAGE_ROOT = Path(__file__).resolve().parents[3]

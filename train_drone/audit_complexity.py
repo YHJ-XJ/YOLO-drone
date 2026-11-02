@@ -32,7 +32,7 @@ def n_params(module):
 
 
 def level_name(stride):
-    return f"P{int(round(math.log2(float(stride))))}"
+    return f"P{round(math.log2(float(stride)))}"
 
 
 def git_version():
@@ -57,16 +57,35 @@ def profile_layers(model, imgsz, device, tag):
                 heads.append(("o2o", m.one2one_cv2, m.one2one_cv3))
             for branch, box, cls in heads:
                 for i, f in enumerate(x):
-                    rows.append(dict(tag=tag, imgsz=imgsz, idx=m.i, type=f"Detect.{branch}",
-                                     stage=f"detect_{level_name(m.stride[i])}", out_stride=int(m.stride[i]),
-                                     params=n_params(box[i]) + n_params(cls[i]), gflops=gflops(box[i], f) + gflops(cls[i], f)))
+                    rows.append(
+                        {
+                            "tag": tag,
+                            "imgsz": imgsz,
+                            "idx": m.i,
+                            "type": f"Detect.{branch}",
+                            "stage": f"detect_{level_name(m.stride[i])}",
+                            "out_stride": int(m.stride[i]),
+                            "params": n_params(box[i]) + n_params(cls[i]),
+                            "gflops": gflops(box[i], f) + gflops(cls[i], f),
+                        }
+                    )
             break
         flops = gflops(m, x.copy() if isinstance(x, list) else x)
         x = m(x)
         stride = imgsz // x.shape[-1]
         stage = "backbone" if m.i < n_backbone else f"neck_{level_name(stride)}"
-        rows.append(dict(tag=tag, imgsz=imgsz, idx=m.i, type=m.type, stage=stage, out_stride=stride,
-                         params=n_params(m), gflops=flops))
+        rows.append(
+            {
+                "tag": tag,
+                "imgsz": imgsz,
+                "idx": m.i,
+                "type": m.type,
+                "stage": stage,
+                "out_stride": stride,
+                "params": n_params(m),
+                "gflops": flops,
+            }
+        )
         y.append(x if m.i in model.save else None)
     return rows
 
@@ -75,11 +94,13 @@ def uncounted_stats(model, imgsz, device):
     stats, hooks = {}, []
     for m in model.modules():
         if isinstance(m, UNCOUNTED):
+
             def hook(mod, inp, out, name=type(m).__name__):
                 o = out if torch.is_tensor(out) else out[0]
                 s = stats.setdefault(name, [0, 0])
                 s[0] += 1
                 s[1] += o.numel()
+
             hooks.append(m.register_forward_hook(hook))
     model(torch.zeros(1, 3, imgsz, imgsz, device=device))
     for h in hooks:
@@ -92,10 +113,17 @@ def audit(weight, imgszs, device):
     for p in model.parameters():
         p.requires_grad_(False)
     det = model.model[-1]
-    rec = dict(name=weight.parent.parent.name, weight=str(weight.relative_to(ROOT)), code=git_version(),
-               nc_yaml=model.yaml.get("nc"), nc_head=det.nc, n_names=len(model.names),
-               levels="/".join(level_name(s) for s in det.stride), end2end=bool(getattr(det, "end2end", False)),
-               params_unfused=n_params(model))
+    rec = {
+        "name": weight.parent.parent.name,
+        "weight": str(weight.relative_to(ROOT)),
+        "code": git_version(),
+        "nc_yaml": model.yaml.get("nc"),
+        "nc_head": det.nc,
+        "n_names": len(model.names),
+        "levels": "/".join(level_name(s) for s in det.stride),
+        "end2end": bool(getattr(det, "end2end", False)),
+        "params_unfused": n_params(model),
+    }
     fused = copy.deepcopy(model).fuse(verbose=False)
     rec["o2m_removed"] = getattr(fused.model[-1], "cv2", None) is None
     rec["params_fused"] = n_params(fused)
@@ -133,9 +161,11 @@ def write_report(path, recs, imgszs):
     lines = [
         f"# 复杂度审计（代码版本 {recs[0].get('code', '?') if recs else '?'}）",
         "",
-        "口径：THOP MACs×2，batch=1，全尺寸输入实测（非 stride 代理）。fused = Conv+BN 融合并移除 o2m 头。"
-        f"THOP 不计 grid_sample、门控逐元素乘等函数式运算；grid_sample 另按每输出元素 {GRID_SAMPLE_FLOPS_PER_ELEM} FLOPs 估算，未并入总数。"
-        "P2 Neck 指输出 stride=4 的 Neck 层。部署结论以导出后端实际图和 Pi 5 延迟为准。",
+        (
+            "口径：THOP MACs×2，batch=1，全尺寸输入实测（非 stride 代理）。fused = Conv+BN 融合并移除 o2m 头。"
+            f"THOP 不计 grid_sample、门控逐元素乘等函数式运算；grid_sample 另按每输出元素 {GRID_SAMPLE_FLOPS_PER_ELEM} FLOPs 估算，未并入总数。"
+            "P2 Neck 指输出 stride=4 的 Neck 层。部署结论以导出后端实际图和 Pi 5 延迟为准。"
+        ),
         "",
         f"| 实验 | nc head/yaml | 检测层 | Params fused/M | GFLOPs fused@640 | GFLOPs fused@{s} | P2 Neck+Detect 占比@{s} | grid_sample 估算@{s} | o2m 已移除 |",
         "|---|---|---|---:|---:|---:|---:|---:|---|",
@@ -171,7 +201,7 @@ def main():
             try:
                 rec, rows = audit(w, args.imgsz, device)
             except Exception as e:
-                rec, rows = dict(name=w.parent.parent.name, weight=str(w.relative_to(ROOT)), error=repr(e)), []
+                rec, rows = {"name": w.parent.parent.name, "weight": str(w.relative_to(ROOT)), "error": repr(e)}, []
             recs.append(rec)
             layers += rows
     write_csv(out / "summary.csv", recs)

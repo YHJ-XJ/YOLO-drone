@@ -2,10 +2,10 @@
 # 实验目的：验证“P2高分辨率检测分支 + 细粒度下采样 + 动态上采样”是否能进一步提升无人机小目标检测精度。
 # 变量控制：不启用 NWD，不加入 DCLDown/DAFuseST，避免多个不稳定因素混在一起。
 
-nc: 10  # VisDrone 转 YOLO 后的类别数
-scale: n  # 使用 YOLO26n 规模，便于和前面 n 模型实验公平比较
-end2end: True  # 保持 YOLO26 官方端到端检测模式
-reg_max: 1  # 保持 YOLO26 官方配置
+nc: 10 # VisDrone 转 YOLO 后的类别数
+scale: n # 使用 YOLO26n 规模，便于和前面 n 模型实验公平比较
+end2end: True # 保持 YOLO26 官方端到端检测模式
+reg_max: 1 # 保持 YOLO26 官方配置
 
 scales:
   # [depth, width, max_channels]

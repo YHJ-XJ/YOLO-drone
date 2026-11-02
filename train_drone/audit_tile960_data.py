@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def count_tiles(tile_dir):
-    """统计切片训练集的图片数和标签数"""
+    """统计切片训练集的图片数和标签数."""
     img_dir = tile_dir / "images" / "train"
     lbl_dir = tile_dir / "labels" / "train"
 
@@ -34,12 +34,12 @@ def count_tiles(tile_dir):
         "n_empty": n_empty,
         "empty_ratio": n_empty / n_lbls if n_lbls > 0 else 0,
         "total_objects": total_objs,
-        "avg_objs_per_tile": total_objs / n_lbls if n_lbls > 0 else 0
+        "avg_objs_per_tile": total_objs / n_lbls if n_lbls > 0 else 0,
     }
 
 
 def count_original(data_yaml_path):
-    """统计原始 VisDrone 训练集的图片数"""
+    """统计原始 VisDrone 训练集的图片数."""
     # 假设原始数据在 datasets/VisDrone-YOLO
     orig_dir = ROOT / "datasets" / "VisDrone-YOLO" / "images" / "train"
     imgs = list(orig_dir.glob("*.jpg")) if orig_dir.exists() else []
@@ -77,7 +77,7 @@ def main():
         "avg_objs_per_tile": tile_stats["avg_objs_per_tile"],
         "steps_per_epoch_orig": steps_orig,
         "steps_per_epoch_tile": steps_tile,
-        "steps_ratio": steps_tile / steps_orig if steps_orig > 0 else 0
+        "steps_ratio": steps_tile / steps_orig if steps_orig > 0 else 0,
     }
 
     csv_path = out / "tile960_stats.csv"
