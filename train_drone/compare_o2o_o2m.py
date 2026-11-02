@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def validate_with_mode(model, dataloader, end2end, max_det, device):
-    """验证 o2o 或 o2m 模式"""
+    """验证 o2o 或 o2m 模式."""
     model.model[-1].end2end = end2end
     model.model[-1].max_det = max_det
 
@@ -41,7 +41,9 @@ def validate_with_mode(model, dataloader, end2end, max_det, device):
                 fn = len(gt_boxes) - tp
                 fp = len(pred_boxes) - tp
 
-                stats.append({"n_gt": len(gt_boxes), "n_pred": len(pred_boxes), "tp": int(tp), "fp": int(fp), "fn": int(fn)})
+                stats.append(
+                    {"n_gt": len(gt_boxes), "n_pred": len(pred_boxes), "tp": int(tp), "fp": int(fp), "fn": int(fn)}
+                )
 
     total_tp = sum(s["tp"] for s in stats)
     total_gt = sum(s["n_gt"] for s in stats)
@@ -65,8 +67,9 @@ def main():
     model = YOLO(str(ROOT / args.weight))
     model.model.float().eval().to(device)
 
-    dataloader = build_dataloader(str(ROOT / args.data), batch=args.batch, imgsz=640, augment=False,
-                                   split="val", workers=4, shuffle=False)[0]
+    dataloader = build_dataloader(
+        str(ROOT / args.data), batch=args.batch, imgsz=640, augment=False, split="val", workers=4, shuffle=False
+    )[0]
 
     results = []
     # o2m+NMS

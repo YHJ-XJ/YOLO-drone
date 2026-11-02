@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # 本实验：YOLO26 baseline + NWD（Normalized Wasserstein Distance）
 # 目的：模型结构完全等于 baseline，只在 box loss 中用 NWD 替换一半 CIoU，
 #       单独衡量 NWD 对 tiny object 定位的净收益。

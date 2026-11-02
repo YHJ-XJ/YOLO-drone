@@ -2,10 +2,10 @@
 # 本配置用于做“单变量消融实验”：只把 YOLO26 baseline 颈部的 nearest 上采样替换为 DySample。
 # 目的：验证动态采样上采样是否能改善小目标特征恢复与跨尺度融合。
 
-nc: 10  # VisDrone 转 YOLO 后的类别数
-scale: n  # 使用 n 规模，对应 yolo26n.pt 预训练权重
-end2end: True  # YOLO26 官方端到端检测模式
-reg_max: 1  # YOLO26 官方配置，保持不变以便和 baseline 公平对比
+nc: 10 # VisDrone 转 YOLO 后的类别数
+scale: n # 使用 n 规模，对应 yolo26n.pt 预训练权重
+end2end: True # YOLO26 官方端到端检测模式
+reg_max: 1 # YOLO26 官方配置，保持不变以便和 baseline 公平对比
 
 scales:
   # [depth, width, max_channels]

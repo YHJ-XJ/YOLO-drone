@@ -1,6 +1,5 @@
-from pathlib import Path
 import csv
-
+from pathlib import Path
 
 # 跑完 quick5_screen_train.py 后运行这个脚本，自动汇总每个模型前5轮的最好指标。
 RUNS_DIR = Path(__file__).resolve().parent / "runs"
