@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 model = YOLO("train_drone/yolov26+DCLDown/yolov26+DCLDown.yaml")
 model.load("yolo26n.pt")
 

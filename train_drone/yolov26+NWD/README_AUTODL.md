@@ -41,9 +41,9 @@ YOLO26 baseline: mAP50-95 = 0.24407
 ## 关键开关（ultralytics/utils/loss.py 顶部）
 
 ```python
-NWD_ENABLED = True    # 总开关
-NWD_ALPHA = 0.5       # NWD 在 box loss 中的占比
-NWD_CONSTANT = 16.0   # 像素归一化常数，越小对 tiny box 越敏感
+NWD_ENABLED = True  # 总开关
+NWD_ALPHA = 0.5  # NWD 在 box loss 中的占比
+NWD_CONSTANT = 16.0  # 像素归一化常数，越小对 tiny box 越敏感
 ```
 
 若要得到"同条件无 NWD"的对照，把 `NWD_ENABLED` 改为 `False` 重跑即可。
