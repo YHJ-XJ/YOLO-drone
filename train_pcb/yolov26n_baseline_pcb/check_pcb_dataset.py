@@ -1,5 +1,6 @@
-from pathlib import Path
+from __future__ import annotations
 
+from pathlib import Path
 
 # 检查 AutoDL 上传后的 PCB 数据集结构是否完整。
 # 运行位置建议为：/root/autodl-tmp/yolo26_drone_package/yolo26
@@ -9,7 +10,7 @@ IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
 
 
 def count_boxes(label_dir: Path) -> tuple[int, int]:
-    """统计目标框数量和空标签文件数量。"""
+    """统计目标框数量和空标签文件数量。."""
     box_count = 0
     empty_count = 0
     for label_path in label_dir.glob("*.txt"):

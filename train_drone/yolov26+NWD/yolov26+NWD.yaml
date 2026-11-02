@@ -3,10 +3,10 @@
 # 只在 box loss 中用 NWD（Normalized Wasserstein Distance）替换一半 CIoU。
 # 目的：单独衡量 NWD 对 tiny object 定位的净收益，与 baseline 0.24407 直接对比。
 
-nc: 10  # VisDrone 转 YOLO 后的 10 个有效类别
-scale: n  # 使用 YOLO26n 规模，与 yolo26n.pt 预训练权重对应
-end2end: True  # 保持 YOLO26 官方端到端检测设置
-reg_max: 1  # 保持官方 YOLO26 配置，便于和 baseline 公平对比
+nc: 10 # VisDrone 转 YOLO 后的 10 个有效类别
+scale: n # 使用 YOLO26n 规模，与 yolo26n.pt 预训练权重对应
+end2end: True # 保持 YOLO26 官方端到端检测设置
+reg_max: 1 # 保持官方 YOLO26 配置，便于和 baseline 公平对比
 
 scales:
   # [depth, width, max_channels]

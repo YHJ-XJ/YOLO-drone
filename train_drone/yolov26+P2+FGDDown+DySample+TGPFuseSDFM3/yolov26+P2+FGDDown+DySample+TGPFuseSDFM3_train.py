@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # YOLO26 + P2 + FGDDown + DySample + TGPFuseSDFM3
 # 5轮预验证：判断SDFM启发的小目标浅层细节融合是否优于普通Concat/TGPFuse。
 model = YOLO("train_drone/yolov26+P2+FGDDown+DySample+TGPFuseSDFM3/yolov26+P2+FGDDown+DySample+TGPFuseSDFM3.yaml")
