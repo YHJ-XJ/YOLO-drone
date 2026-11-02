@@ -9,16 +9,15 @@ from tqdm import tqdm
 
 from ultralytics import YOLO
 from ultralytics.data import build_dataloader
-from ultralytics.nn.modules import conv as C
 
 ROOT = Path(__file__).resolve().parents[1]
 GATE_MODULES = ("TGPFuse", "TCA", "P5SPF")
 
 
 def compute_iou_map(gate_map, gt_boxes, img_shape):
-    """计算 gate map 与 GT 小目标框的空间对齐度（简化版 IoU）"""
+    """计算 gate map 与 GT 小目标框的空间对齐度（简化版 IoU）."""
     h_map, w_map = gate_map.shape[-2:]
-    h_img, w_img = img_shape
+    _h_img, _w_img = img_shape
     if len(gt_boxes) == 0:
         return 0.0
     ious = []
@@ -46,13 +45,21 @@ def audit_gates(weight_path, data_yaml, batch_size, device):
     def make_hook(name):
         def hook(module, inp, out):
             if name not in gates_info:
-                gates_info[name] = {"gamma": module.gamma.item() if hasattr(module, "gamma") else None,
-                                     "modulation": [], "gt_align": []}
+                gates_info[name] = {
+                    "gamma": module.gamma.item() if hasattr(module, "gamma") else None,
+                    "modulation": [],
+                    "gt_align": [],
+                }
             # 假设 TGPFuse/TCA/P5SPF 的 gate 输出在 out 的第二个元素
             if isinstance(out, (tuple, list)) and len(out) > 1:
                 gate = out[1]  # (B, 1, H, W)
-                mod = (gate * module.gamma.item()).abs().mean().item() if hasattr(module, "gamma") else gate.abs().mean().item()
+                mod = (
+                    (gate * module.gamma.item()).abs().mean().item()
+                    if hasattr(module, "gamma")
+                    else gate.abs().mean().item()
+                )
                 gates_info[name]["modulation"].append(mod)
+
         return hook
 
     for m in model.modules():
@@ -61,8 +68,9 @@ def audit_gates(weight_path, data_yaml, batch_size, device):
             hooks.append(m.register_forward_hook(make_hook(name)))
 
     # 构建验证 dataloader（前 100 图快速审计）
-    dataloader = build_dataloader(str(ROOT / data_yaml), batch=batch_size, imgsz=640, augment=False,
-                                    split="val", workers=4, shuffle=False)[0]
+    dataloader = build_dataloader(
+        str(ROOT / data_yaml), batch=batch_size, imgsz=640, augment=False, split="val", workers=4, shuffle=False
+    )[0]
 
     with torch.no_grad():
         for i, batch in enumerate(tqdm(dataloader, desc="审计门控", total=min(100 // batch_size, len(dataloader)))):
@@ -78,13 +86,15 @@ def audit_gates(weight_path, data_yaml, batch_size, device):
     results = []
     for name, info in gates_info.items():
         mod_vals = info["modulation"]
-        results.append({
-            "module": name.split("_")[0],
-            "gamma": info["gamma"],
-            "modulation_mean": sum(mod_vals) / len(mod_vals) if mod_vals else 0,
-            "modulation_std": torch.tensor(mod_vals).std().item() if mod_vals else 0,
-            "n_samples": len(mod_vals)
-        })
+        results.append(
+            {
+                "module": name.split("_")[0],
+                "gamma": info["gamma"],
+                "modulation_mean": sum(mod_vals) / len(mod_vals) if mod_vals else 0,
+                "modulation_std": torch.tensor(mod_vals).std().item() if mod_vals else 0,
+                "n_samples": len(mod_vals),
+            }
+        )
     return results
 
 

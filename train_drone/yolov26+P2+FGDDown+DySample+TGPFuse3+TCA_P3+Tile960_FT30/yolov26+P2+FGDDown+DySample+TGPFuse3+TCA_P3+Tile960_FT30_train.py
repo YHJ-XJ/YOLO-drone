@@ -1,12 +1,10 @@
 import os
 from pathlib import Path
 
-
 # 低成本微调实验：关闭 CS-SlideLoss，避免引入新的不稳定变量。
 os.environ["YOLO_CS_SLIDE"] = "0"
 
 from ultralytics import YOLO
-
 
 # 使用 Tile960 训练得到的 best.pt 作为起点，再用原始 VisDrone 训练集短程微调。
 # 这样比继续跑切片训练便宜很多，也能减少“切片训练分布”和原始验证集之间的偏差。
