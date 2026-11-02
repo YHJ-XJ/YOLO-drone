@@ -1,4 +1,4 @@
-﻿# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """Convolution modules."""
 
 from __future__ import annotations
@@ -12,28 +12,28 @@ from torch import nn
 
 __all__ = (
     "CBAM",
+    "TPCCSIM",
     "ChannelAttention",
     "Concat",
     "Conv",
     "Conv2",
     "ConvTranspose",
+    "DAFuseST",
+    "DCLDown",
     "DWConv",
     "DWConvTranspose2d",
+    "DySample",
+    "FGDDown",  # 自编模块1-提升P2->P3下采样时小目标信息检测的精度
     "Focus",
     "GhostConv",
     "Index",
+    "LFGDDown",  # 自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
     "LightConv",
     "RepConv",
     "SpatialAttention",
-    "FGDDown",  #自编模块1-提升P2->P3下采样时小目标信息检测的精度
-    "LFGDDown",  #自编模块2-提升P2->P3下采样时小目标信息检测的精度，且适合轻量化网络
-    "DCLDown",
-    "WDCLDown",
-    "DySample",
     "TGPFuse",
     "TGPFuseSDFM",
-    "TPCCSIM",
-    "DAFuseST",
+    "WDCLDown",
 )
 
 
@@ -87,7 +87,7 @@ class Conv(nn.Module):
         """
         return self.act(self.bn(self.conv(x)))
 
-    def forward_fuse(self, x): #此处即为上述提到的融合模块对应的前向传播，用于部署的时候
+    def forward_fuse(self, x):  # 此处即为上述提到的融合模块对应的前向传播，用于部署的时候
         """Apply convolution and activation without batch normalization.
 
         Args:
@@ -209,55 +209,54 @@ class DWConv(Conv):
         """
         super().__init__(c1, c2, k, s, g=math.gcd(c1, c2), d=d, act=act)
 
-class FGDDown(nn.Module):
 
+class FGDDown(nn.Module):
     def __init__(self, c1, c2):
         super().__init__()
         c_ = c2 // 2  # hidden channels
-        #第一条分支-保持空间信息量不损失
-        self.s2d = nn.PixelUnshuffle(2)  #下采样2倍
-        self.cv_spd=Conv(c1*4,c_,1,1)
+        # 第一条分支-保持空间信息量不损失
+        self.s2d = nn.PixelUnshuffle(2)  # 下采样2倍
+        self.cv_spd = Conv(c1 * 4, c_, 1, 1)
 
-        #第二条分支-保留突出特征
-        self.pool = nn.MaxPool2d(2,2)
-        self.cv_pool=Conv(c1,c_,1,1)
+        # 第二条分支-保留突出特征
+        self.pool = nn.MaxPool2d(2, 2)
+        self.cv_pool = Conv(c1, c_, 1, 1)
 
-        #融合两个分支
-        self.fuse=Conv(c2,c2,3,1)
+        # 融合两个分支
+        self.fuse = Conv(c2, c2, 3, 1)
 
     def forward(self, x):
-        x1=self.cv_spd(self.s2d(x))
-        x2=self.cv_pool(self.pool(x))
-        return self.fuse(torch.cat((x1,x2),1))
+        x1 = self.cv_spd(self.s2d(x))
+        x2 = self.cv_pool(self.pool(x))
+        return self.fuse(torch.cat((x1, x2), 1))
 
-#相比于上述的模块，该模块为适合轻量化的目标检测网络，减少参数量和计算量
+
+# 相比于上述的模块，该模块为适合轻量化的目标检测网络，减少参数量和计算量
 class LFGDDown(nn.Module):
     def __init__(self, c1, c2):
         super().__init__()
-        c_=c2//2
+        c_ = c2 // 2
 
-        self.s2d=nn.PixelUnshuffle(2)
-        self.cv_spd=Conv(c1*4,c_,1,1)
+        self.s2d = nn.PixelUnshuffle(2)
+        self.cv_spd = Conv(c1 * 4, c_, 1, 1)
 
-#与上述的最大池化不同的是这个模块有可学习参数，能学习边缘、纹理、局部结构，较灵活
-        self.dw_down=DWConv(c1,c1,3,2)
-        self.cv_dw=Conv(c1,c2-c_,1,1)
+        # 与上述的最大池化不同的是这个模块有可学习参数，能学习边缘、纹理、局部结构，较灵活
+        self.dw_down = DWConv(c1, c1, 3, 2)
+        self.cv_dw = Conv(c1, c2 - c_, 1, 1)
 
-        self.fuse_dw=DWConv(c2,c2,3,1)
-        self.fuse_pw=Conv(c2,c2,1,1)
+        self.fuse_dw = DWConv(c2, c2, 3, 1)
+        self.fuse_pw = Conv(c2, c2, 1, 1)
 
     def forward(self, x):
-        x1=self.cv_spd(self.s2d(x))
-        x2=self.cv_dw(self.dw_down(x))
-        return self.fuse_pw(self.fuse_dw(torch.cat((x1,x2),1)))
-
+        x1 = self.cv_spd(self.s2d(x))
+        x2 = self.cv_dw(self.dw_down(x))
+        return self.fuse_pw(self.fuse_dw(torch.cat((x1, x2), 1)))
 
 
 class GFGDDown(nn.Module):
-    """Gated Fine-Grained Dual-path Downsampling（门控细粒度双路径下采样）。
+    """Gated Fine-Grained Dual-path Downsampling（门控细粒度双路径下采样）。.
 
-    PixelUnshuffle 分支保留小目标细粒度空间信息，Pool 分支保留显著响应。
-    门控分支根据输入特征自适应分配两条路径的权重，用于替代固定拼接。
+    PixelUnshuffle 分支保留小目标细粒度空间信息，Pool 分支保留显著响应。 门控分支根据输入特征自适应分配两条路径的权重，用于替代固定拼接。
     """
 
     def __init__(self, c1, c2):
@@ -290,6 +289,8 @@ class GFGDDown(nn.Module):
         x1 = self.cv_spd(self.s2d(x)) * w[:, 0:1]
         x2 = self.cv_pool(self.pool(x)) * w[:, 1:2]
         return self.fuse(torch.cat((x1, x2), 1))
+
+
 class DCLDown(nn.Module):
     """Detail-Contrast Lightweight Downsampling for small object detection."""
 
@@ -320,14 +321,13 @@ class DCLDown(nn.Module):
 
 
 class WDCLDown(nn.Module):
-    """Wavelet Detail-Contrast Lightweight Downsampling（小波细节对比轻量下采样）。
+    """Wavelet Detail-Contrast Lightweight Downsampling（小波细节对比轻量下采样）。.
 
     三条并行分支在把分辨率减半的同时保留小目标细节：
-      1. PixelUnshuffle(2) -> 1x1 Conv   空间-通道重排，借鉴 SPDConv / reorg_layer
-      2. DWConv(3, s=2)      -> 1x1 Conv   可学习局部结构下采样
-      3. Haar 高频(LH/HL/HH) -> 1x1 Conv   方向性边缘/纹理，借鉴小波池化思想
-    其中第 3 条分支是固定的加减法，几乎没有可学习参数，却能把小目标最依赖的边缘与
-    局部突变信息保留下来。相比 DCLDown 的 MaxPool-AvgPool 对比分支，Haar 高频能同时
+    1. PixelUnshuffle(2) -> 1x1 Conv   空间-通道重排，借鉴 SPDConv / reorg_layer
+    2. DWConv(3, s=2)      -> 1x1 Conv   可学习局部结构下采样
+    3. Haar 高频(LH/HL/HH) -> 1x1 Conv   方向性边缘/纹理，借鉴小波池化思想
+    其中第 3 条分支是固定的加减法，几乎没有可学习参数，却能把小目标最依赖的边缘与 局部突变信息保留下来。相比 DCLDown 的 MaxPool-AvgPool 对比分支，Haar 高频能同时
     保留水平/垂直/对角三个方向的细节，信号更强。
     """
 
@@ -353,7 +353,7 @@ class WDCLDown(nn.Module):
 
     @staticmethod
     def _haar_hf(x):
-        """返回 2x2 Haar 变换的高频子带 LH/HL/HH（无学习参数）。"""
+        """返回 2x2 Haar 变换的高频子带 LH/HL/HH（无学习参数）。."""
         b, c, h, w = x.shape
         x = F.pixel_unshuffle(x, 2)  # [B, 4C, H/2, W/2]，每个 2x2 块拆成 a,b,c,d
         x = x.view(b, c, 4, h // 2, w // 2)
@@ -371,7 +371,7 @@ class WDCLDown(nn.Module):
 
 
 class DySample(nn.Module):
-    """动态采样上采样模块：用可学习偏移替代固定 nearest 上采样。"""
+    """动态采样上采样模块：用可学习偏移替代固定 nearest 上采样。."""
 
     def __init__(self, c1, scale=2, groups=4, dyscope=False):
         super().__init__()
@@ -398,13 +398,13 @@ class DySample(nn.Module):
         self.register_buffer("init_pos", self._init_pos())
 
     def _init_pos(self):
-        """生成 scale x scale 子像素网格的初始偏移。"""
+        """生成 scale x scale 子像素网格的初始偏移。."""
         h = torch.arange((-self.scale + 1) / 2, (self.scale - 1) / 2 + 1) / self.scale
         pos = torch.stack(torch.meshgrid(h, h, indexing="ij")).transpose(1, 2)
         return pos.repeat(1, self.groups, 1).reshape(1, -1, 1, 1)
 
     def sample(self, x, offset):
-        """根据学习到的 offset 对原特征图做 grid_sample，得到动态上采样特征。"""
+        """根据学习到的 offset 对原特征图做 grid_sample，得到动态上采样特征。."""
         b, _, h, w = offset.shape
         offset = offset.view(b, 2, -1, h, w)
 
@@ -436,9 +436,8 @@ class DySample(nn.Module):
         return self.sample(x, offset)
 
 
-
 class TGPFuse(nn.Module):
-    """Tiny-object Prior Guided Fusion（小目标先验引导融合）。
+    """Tiny-object Prior Guided Fusion（小目标先验引导融合）。.
 
     该模块用于替换 Neck 中关键 Concat：
     1. 保留原 Concat 的通道拼接主路径，保证预训练结构尽量稳定；
@@ -482,13 +481,13 @@ class TGPFuse(nn.Module):
 
 
 class P5SPF(nn.Module):
-    """P5 Semantic Preserving Fusion（P5语义保留式剪枝融合）。
+    """P5 Semantic Preserving Fusion（P5语义保留式剪枝融合）。.
 
     用于删除 P5 检测头前，把 P5 深层语义轻量注入 P4：
-      1. P5 分支先通过 1x1 Conv 对齐到 P4 通道；
-      2. 从 P4 生成细节门控，保留小目标定位信息；
-      3. 从 P5 生成语义门控，补偿删除 P5 检测头后的高层语义损失；
-      4. 输出通道仍等于 P4，不做通道拼接，避免计算量明显增加。
+    1. P5 分支先通过 1x1 Conv 对齐到 P4 通道；
+    2. 从 P4 生成细节门控，保留小目标定位信息；
+    3. 从 P5 生成语义门控，补偿删除 P5 检测头后的高层语义损失；
+    4. 输出通道仍等于 P4，不做通道拼接，避免计算量明显增加。
     """
 
     def __init__(self, channels, reduction=4, gamma_init=0.1):
@@ -529,13 +528,13 @@ class P5SPF(nn.Module):
 
 
 class TCA(nn.Module):
-    """Tiny Convolutional Attention（小目标轻量卷积注意力）。
+    """Tiny Convolutional Attention（小目标轻量卷积注意力）。.
 
     用于 Neck 融合后的 P3/P4 特征校准：
-      1. 1x1 Conv 先做通道对齐；
-      2. 深度 3x3 卷积提取局部边缘和纹理；
-      3. 深度 5x5 卷积扩大局部上下文感受野；
-      4. 生成轻量空间注意力图，以残差方式增强小目标响应。
+    1. 1x1 Conv 先做通道对齐；
+    2. 深度 3x3 卷积提取局部边缘和纹理；
+    3. 深度 5x5 卷积扩大局部上下文感受野；
+    4. 生成轻量空间注意力图，以残差方式增强小目标响应。
 
     该模块不改变特征图尺寸，适合插入 Detect 前或 Neck 融合后的关键层。
     """
@@ -578,10 +577,9 @@ class TCA(nn.Module):
 
 
 class TGPFuseSDFM(nn.Module):
-    """Tiny-object Guided Superficial Detail Fusion Module（小目标先验浅层细节融合）。
+    """Tiny-object Guided Superficial Detail Fusion Module（小目标先验浅层细节融合）。.
 
-    设计动机来自 PSFusion 的 SDFM，但这里不是做红外/可见光融合，而是用于 YOLO Neck 中
-    相同尺度特征的融合。它保留 Concat 的输出形式，同时增加局部细节和全局通道两类轻量门控。
+    设计动机来自 PSFusion 的 SDFM，但这里不是做红外/可见光融合，而是用于 YOLO Neck 中 相同尺度特征的融合。它保留 Concat 的输出形式，同时增加局部细节和全局通道两类轻量门控。
     """
 
     def __init__(self, channels, dimension=1, prior_index=-1, reduction=4, gamma_init=0.1):
@@ -633,8 +631,7 @@ class TGPFuseSDFM(nn.Module):
 class TPCCSIM(nn.Module):
     """Tiny-Prior Consistency Calibration with SIM-style modulation.
 
-    用在 Detect 前的单个尺度特征上，做轻量的 gamma/beta 调制。它不改变特征尺寸和通道数，
-    因此适合快速插入 P2/P3/P4/P5 检测层前做消融。
+    用在 Detect 前的单个尺度特征上，做轻量的 gamma/beta 调制。它不改变特征尺寸和通道数， 因此适合快速插入 P2/P3/P4/P5 检测层前做消融。
     """
 
     def __init__(self, c1, c2=None, reduction=8, gamma_init=0.1):
@@ -665,13 +662,15 @@ class TPCCSIM(nn.Module):
         gamma, beta = self.context(x).chunk(2, 1)
         prior = self.prior(x)
         return x * (1.0 + self.gamma_scale * prior * gamma.sigmoid()) + self.gamma_scale * prior * beta
+
+
 class DAFuseST(nn.Module):
-    """细节感知尺度自适应融合模块（v2）：用 softmax 分支权重替换普通 Concat。
+    """细节感知尺度自适应融合模块（v2）：用 softmax 分支权重替换普通 Concat。.
 
     相比 v1 的两点修正：
     1. 去掉 gamma=0 / tanh(0)=0 的门控，避免空间门控卷积在训练初期梯度为零、长期不激活。
     2. 不再用逐分支标量 branch_scale（它和下游 C3k2 的 1x1 卷积作用重复），改为
-       GAP+GMP -> 微型 MLP -> softmax 得到"分支权重"，机制更明确且无梯度消失。
+    GAP+GMP -> 微型 MLP -> softmax 得到"分支权重"，机制更明确且无梯度消失。
     """
 
     def __init__(self, channels, dimension=1):
@@ -1174,5 +1173,3 @@ class Index(nn.Module):
             (torch.Tensor): Selected tensor.
         """
         return x[self.index]
-
-

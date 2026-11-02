@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # P5SPFPrune：P5 Semantic Preserving Fusion Pruning
 # 核心思想：
 # 1. 不再直接保留 P5 检测头，减少大步长检测分支对边缘部署的负担；

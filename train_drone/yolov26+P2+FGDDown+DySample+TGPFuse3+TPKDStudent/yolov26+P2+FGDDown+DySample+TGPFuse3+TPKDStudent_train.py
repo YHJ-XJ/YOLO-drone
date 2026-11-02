@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 
-
 # TPKDStudent：Tiny-Prior Knowledge Distillation Student
 # 目的：用当前最强 TGPFuse3 作为 Teacher，训练一个更窄的同拓扑 Student。
 # 这样既保留 P2/TGPFuse 小目标先验融合路径，又降低通道宽度，适合作为轻量化第一步。
