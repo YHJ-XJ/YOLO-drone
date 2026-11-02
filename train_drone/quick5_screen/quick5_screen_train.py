@@ -1,7 +1,7 @@
-from pathlib import Path
 import argparse
 import gc
 import os
+from pathlib import Path
 
 # 本地 8GB 显存容易出现显存碎片，提前设置 PyTorch CUDA 分配策略。
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
@@ -9,7 +9,6 @@ os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 import torch
 
 from ultralytics import YOLO
-
 
 # quick5 是“快速预筛选”，不是正式论文结果。
 # 目的：用很少轮次观察 early mAP、显存和速度，把明显不值得正式训练的模块先淘汰。
@@ -24,8 +23,7 @@ CANDIDATES = [
     },
     {
         "name": "quick5_TGPFuse3",
-        "model": ROOT
-        / "train_drone/yolov26+P2+FGDDown+DySample+TGPFuse3/yolov26+P2+FGDDown+DySample+TGPFuse3.yaml",
+        "model": ROOT / "train_drone/yolov26+P2+FGDDown+DySample+TGPFuse3/yolov26+P2+FGDDown+DySample+TGPFuse3.yaml",
     },
     {
         "name": "quick5_TGPFuseSDFM3",
