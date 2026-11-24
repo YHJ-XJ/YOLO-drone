@@ -10,7 +10,7 @@ imgsz: 960
 save: true
 save_period: -1
 cache: false
-device: '0'
+device: "0"
 workers: 0
 project: F:/图像深度学习科研/面向边缘设备部署的无人机小目标轻量化检测算法研究/yolo26/train_drone
 name: yolov11_base

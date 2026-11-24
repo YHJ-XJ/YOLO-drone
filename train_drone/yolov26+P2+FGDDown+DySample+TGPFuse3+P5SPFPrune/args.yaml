@@ -10,7 +10,7 @@ imgsz: 960
 save: true
 save_period: -1
 cache: false
-device: '0'
+device: "0"
 workers: 8
 project: /root/autodl-tmp/yolo26_drone_package/yolo26/train_drone
 name: yolov26_P2_FGDDown_DySample_TGPFuse3_P5SPFPrune

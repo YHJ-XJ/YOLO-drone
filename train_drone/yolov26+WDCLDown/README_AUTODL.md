@@ -10,6 +10,7 @@ YOLO26 baseline（结构不变）
 ```
 
 WDCLDown 三条支路：
+
 1. PixelUnshuffle(2) -> 1x1 Conv —— 空间-通道重排（SPDConv/reorg 思想）
 2. DWConv(3,s=2) -> 1x1 Conv —— 可学习局部结构下采样
 3. Haar 高频(LH/HL/HH) -> 1x1 Conv —— 方向性边缘/纹理（小波池化思想）

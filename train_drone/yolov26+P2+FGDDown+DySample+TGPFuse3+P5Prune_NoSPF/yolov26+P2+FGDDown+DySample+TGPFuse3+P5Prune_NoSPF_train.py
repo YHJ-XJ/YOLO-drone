@@ -1,11 +1,9 @@
 import os
 
-
 # 消融实验：关闭 CS-SlideLoss，只观察删 P5 且不使用 P5SPF 时的结构影响。
 os.environ["YOLO_CS_SLIDE"] = "0"
 
 from ultralytics import YOLO
-
 
 # P5Prune_NoSPF：
 # 直接删除 P5 检测头，不引入 P5SPF 语义保留模块。

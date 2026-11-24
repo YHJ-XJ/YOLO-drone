@@ -1,9 +1,8 @@
-from pathlib import Path
 import argparse
 import shutil
+from pathlib import Path
 
 import cv2
-
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp"}
 
@@ -92,7 +91,7 @@ def process_split(src_root: Path, out_root: Path, split: str, tile: int, overlap
                 for box in boxes:
                     if not box_center_in_tile(box, x0, y0, tw, th):
                         continue
-                    cls, x1, y1, x2, y2 = box
+                    _cls, x1, y1, x2, y2 = box
                     old_area = max(0.0, x2 - x1) * max(0.0, y2 - y1)
                     clipped = clip_box_to_tile(box, x0, y0, tw, th)
                     _, cx1, cy1, cx2, cy2 = clipped
@@ -111,10 +110,10 @@ def process_split(src_root: Path, out_root: Path, split: str, tile: int, overlap
 
                 name = f"{img_path.stem}_x{x0}_y{y0}_s{tile}{img_path.suffix.lower()}"
                 cv2.imwrite(str(out_img_dir / name), tile_img)
-                label_text = "\n".join(
-                    f"{cls} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}" for cls, x, y, bw, bh in new_labels
+                label_text = "\n".join(f"{cls} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}" for cls, x, y, bw, bh in new_labels)
+                (out_label_dir / f"{Path(name).stem}.txt").write_text(
+                    label_text + ("\n" if label_text else ""), encoding="utf-8"
                 )
-                (out_label_dir / f"{Path(name).stem}.txt").write_text(label_text + ("\n" if label_text else ""), encoding="utf-8")
                 saved += 1
 
         if idx % 200 == 0:
