@@ -5,10 +5,12 @@
 ## 问题背景
 
 历史消融表中：
+
 - `yolov26+P2` 和 `yolov26+P2+FGDDown` 的 YAML 配置为 `nc: 80`
 - 后续实验 YAML 配置为 `nc: 10`
 
 这导致：
+
 - 表中"DySample 降低参数量和计算量"是类别数差异，不是模块作用
 - 部分行的 FLOPs 偏大约 1.9 GFLOPs（80 类 vs 10 类检测头差异）
 - P2 相对 baseline 的增幅需重算，不能预判方向
@@ -43,6 +45,7 @@ python train_drone/audit_complexity.py
 ### 1. `summary.csv`
 
 每行一个实验，列包括：
+
 - `name`: 实验目录名
 - `nc_yaml`, `nc_head`, `n_names`: 类别数核验
 - `levels`: 检测层（如 `P2/P3/P4`）
@@ -60,6 +63,7 @@ python train_drone/audit_complexity.py
 ### 2. `per_layer.csv`
 
 逐层记录，列包括：
+
 - `name`, `tag` (unfused/fused), `imgsz`, `idx`, `type`, `stage`, `out_stride`, `params`, `gflops`
 
 ### 3. `report.md`
@@ -67,7 +71,7 @@ python train_drone/audit_complexity.py
 Markdown 报告，表格格式：
 
 | 实验 | nc head/yaml | 检测层 | Params fused/M | GFLOPs fused@640 | GFLOPs fused@960 | P2 Neck+Detect 占比@960 | grid_sample 估算@960 | o2m 已移除 |
-|---|---|---|---:|---:|---:|---:|---:|---|
+| ---- | ------------ | ------ | -------------: | ---------------: | ---------------: | ----------------------: | -------------------: | ---------- |
 
 标注类别数异常、grid_sample 估算值、o2m 是否移除。
 
